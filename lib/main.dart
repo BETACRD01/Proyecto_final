@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -13,12 +12,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Intentar inicializar Firebase
+    // Inicializar Firebase
     await Firebase.initializeApp();
-    debugPrint('Firebase inicializado correctamente');
+    print('Firebase inicializado correctamente');
   } catch (e) {
-    debugPrint('Error al inicializar Firebase: $e');
-    debugPrint('La aplicación continuará en modo sin Firebase');
+    print('Error al inicializar Firebase: $e');
   }
 
   runApp(
