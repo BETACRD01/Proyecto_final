@@ -1,5 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:developer' as dev;
 
 class LocationService {
   static Future<bool> requestLocationPermission() async {
@@ -30,14 +31,16 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      print('Error al obtener ubicación: $e');
+      dev.log('Error al obtener ubicación: $e');
       return null;
     }
   }
 
   static double calculateDistance(
-    double lat1, double lon1,
-    double lat2, double lon2,
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
   ) {
     return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
   }

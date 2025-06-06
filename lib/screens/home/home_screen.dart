@@ -427,7 +427,7 @@ class _HomeTab extends StatelessWidget {
           Container(
             height: 100,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
             ),

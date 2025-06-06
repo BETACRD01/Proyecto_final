@@ -22,7 +22,10 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeApp();
+    // Espera un frame para asegurar que el contexto y los providers estén listos
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeApp();
+    });
   }
 
   void _initializeAnimations() {
@@ -59,10 +62,10 @@ class _SplashScreenState extends State<SplashScreen>
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.checkAuthStatus();
 
-      if (authProvider.isAuthenticated) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      if (mounted) {
+        final route =
+            authProvider.isAuthenticated ? AppRoutes.home : AppRoutes.login;
+        Navigator.pushReplacementNamed(context, route);
       }
     }
   }
@@ -100,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen>
                           borderRadius: BorderRadius.circular(75),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),

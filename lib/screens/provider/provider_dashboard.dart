@@ -185,11 +185,11 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -394,11 +394,11 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: AppColors.shadow,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
         ),

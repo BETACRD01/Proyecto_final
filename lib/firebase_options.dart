@@ -13,7 +13,7 @@ import 'package:flutter/foundation.dart'
 /// await Firebase.initializeApp(
 ///   options: DefaultFirebaseOptions.currentPlatform,
 /// );
-/// ```çç
+/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -42,47 +42,54 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBZ9kfThOPtGPYGhgNvD8n9fdNdERJ0AmM',
-    appId: '1:832653619760:web:5b955e3cc8ef62218133f5',
+    appId: '1:832653619760:web:84a4aa6bd1ff8c258133f5',
     messagingSenderId: '832653619760',
     projectId: 'manachynakusa',
     authDomain: 'manachynakusa.firebaseapp.com',
+    databaseURL: 'https://manachynakusa-default-rtdb.firebaseio.com',
     storageBucket: 'manachynakusa.firebasestorage.app',
-    measurementId: 'G-4NKJPSS8ZQ',
+    measurementId: 'G-32VPSK0W54',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD6plAIDdt112LxH7-nPYUjJfwByngedKw',
-    appId: '1:832653619760:android:389478f1f8117bba8133f5',
+    appId: '1:832653619760:android:4c676b9c0eb8aabe8133f5',
     messagingSenderId: '832653619760',
     projectId: 'manachynakusa',
+    databaseURL: 'https://manachynakusa-default-rtdb.firebaseio.com',
     storageBucket: 'manachynakusa.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAtW5_sYtYNH4_wl4N9Q6inDmqCKjuADf4',
-    appId: '1:832653619760:ios:330b54358204296e8133f5',
+    appId: '1:832653619760:ios:4fa5ed065c8079458133f5',
     messagingSenderId: '832653619760',
     projectId: 'manachynakusa',
+    databaseURL: 'https://manachynakusa-default-rtdb.firebaseio.com',
     storageBucket: 'manachynakusa.firebasestorage.app',
+    iosClientId: '832653619760-vir18fdgpretg24tp8lpepillrol5cte.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplicationManachynaKusa20',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyAtW5_sYtYNH4_wl4N9Q6inDmqCKjuADf4',
-    appId: '1:832653619760:ios:330b54358204296e8133f5',
+    appId: '1:832653619760:ios:4fa5ed065c8079458133f5',
     messagingSenderId: '832653619760',
     projectId: 'manachynakusa',
+    databaseURL: 'https://manachynakusa-default-rtdb.firebaseio.com',
     storageBucket: 'manachynakusa.firebasestorage.app',
+    iosClientId: '832653619760-vir18fdgpretg24tp8lpepillrol5cte.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplicationManachynaKusa20',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBZ9kfThOPtGPYGhgNvD8n9fdNdERJ0AmM',
-    appId: '1:832653619760:web:41758c20d723ef968133f5',
+    appId: '1:832653619760:web:341a76bbaf25fb688133f5',
     messagingSenderId: '832653619760',
     projectId: 'manachynakusa',
     authDomain: 'manachynakusa.firebaseapp.com',
+    databaseURL: 'https://manachynakusa-default-rtdb.firebaseio.com',
     storageBucket: 'manachynakusa.firebasestorage.app',
-    measurementId: 'G-W0DC3SWGYD',
+    measurementId: 'G-QGL0N53SQ7',
   );
 }

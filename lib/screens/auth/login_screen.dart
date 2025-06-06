@@ -30,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       bool success = await authProvider.signIn(
         _emailController.text.trim(),
         _passwordController.text,
@@ -41,7 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+            content:
+                Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -61,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Logo y título
                 Center(
                   child: Column(
@@ -100,9 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // Campos de entrada
                 CustomTextField(
                   label: AppStrings.email,
@@ -111,9 +112,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   isEmail: true,
                   prefixIcon: Icons.email_outlined,
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 CustomTextField(
                   label: AppStrings.password,
                   controller: _passwordController,
@@ -121,9 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   isPassword: true,
                   prefixIcon: Icons.lock_outlined,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Olvidé mi contraseña
                 Align(
                   alignment: Alignment.centerRight,
@@ -138,9 +139,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Botón de login
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
@@ -151,9 +152,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Divider
                 const Row(
                   children: [
@@ -171,9 +172,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Expanded(child: Divider(color: AppColors.divider)),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Botón de registro
                 CustomButton(
                   text: 'Crear cuenta nueva',
@@ -182,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   isOutlined: true,
                 ),
-                
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -222,30 +223,31 @@ class _LoginScreenState extends State<LoginScreen> {
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               return TextButton(
-                onPressed: authProvider.isLoading ? null : () async {
-                  if (emailController.text.isNotEmpty) {
-                    bool success = await authProvider.resetPassword(
-                      emailController.text.trim(),
-                    );
-                    
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success 
-                                ? 'Email de recuperación enviado'
-                                : 'Error al enviar email',
-                          ),
-                          backgroundColor: success 
-                              ? AppColors.success 
-                              : AppColors.error,
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: authProvider.isLoading 
+                onPressed: authProvider.isLoading
+                    ? null
+                    : () async {
+                        if (emailController.text.isNotEmpty) {
+                          bool success = await authProvider.resetPassword(
+                            emailController.text.trim(),
+                          );
+
+                          if (!mounted) return; // <-- Esto es correcto
+
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Email de recuperación enviado'
+                                    : 'Error al enviar email',
+                              ),
+                              backgroundColor:
+                                  success ? AppColors.success : AppColors.error,
+                            ),
+                          );
+                        }
+                      },
+                child: authProvider.isLoading
                     ? const SizedBox(
                         width: 16,
                         height: 16,

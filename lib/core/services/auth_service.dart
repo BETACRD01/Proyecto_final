@@ -5,8 +5,8 @@ import 'firebase_service.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService {
-  static final FirebaseAuth _auth = FirebaseService.auth;
-  static final FirebaseFirestore _firestore = FirebaseService.firestore;
+  static FirebaseAuth get _auth => FirebaseService.auth;
+  static FirebaseFirestore get _firestore => FirebaseService.firestore;
 
   // Obtener usuario actual
   static User? get currentUser => _auth.currentUser;

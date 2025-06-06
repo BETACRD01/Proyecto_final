@@ -3,74 +3,54 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 class FirebaseService {
   static bool _isInitialized = false;
 
-  static FirebaseAuth? _auth;
-  static FirebaseFirestore? _firestore;
-  static FirebaseStorage? _storage;
-  static FirebaseMessaging? _messaging;
+  // ✅ Usar directamente las instancias (sin null safety complicado)
+  static FirebaseAuth get auth => FirebaseAuth.instance;
+  static FirebaseFirestore get firestore => FirebaseFirestore.instance;
+  static FirebaseStorage get storage => FirebaseStorage.instance;
+  static FirebaseMessaging get messaging => FirebaseMessaging.instance;
 
-  static FirebaseAuth get auth {
-    if (!_isInitialized) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _auth!;
-  }
+  // ✅ Getter simple para verificar estado
+  static bool get isInitialized => _isInitialized;
 
-  static FirebaseFirestore get firestore {
-    if (!_isInitialized) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _firestore!;
-  }
-
-  static FirebaseStorage get storage {
-    if (!_isInitialized) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _storage!;
-  }
-
-  static FirebaseMessaging get messaging {
-    if (!_isInitialized) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _messaging!;
-  }
-
+  // ✅ Inicialización simplificada que se ejecuta después de Firebase.initializeApp()
   static Future<bool> initialize() async {
     try {
       // Verificar si Firebase ya está inicializado
       if (_isInitialized) {
-        print('Firebase ya está inicializado');
+        if (kDebugMode) {
+          debugPrint('✅ FirebaseService ya está inicializado');
+        }
         return true;
       }
 
-      // Verificar si Firebase está inicializado a nivel de app
+      // Firebase.initializeApp() ya debe haberse ejecutado en main.dart
+      // Solo verificamos que esté disponible
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
+        if (kDebugMode) {
+          debugPrint('❌ Firebase.initializeApp() no se ha ejecutado');
+        }
+        return false;
       }
 
-      // Inicializar servicios
-      _auth = FirebaseAuth.instance;
-      _firestore = FirebaseFirestore.instance;
-      _storage = FirebaseStorage.instance;
-      _messaging = FirebaseMessaging.instance;
-
-      // Inicializar mensajería
+      // Inicializar mensajería si está disponible
       await _initializeMessaging();
 
       _isInitialized = true;
-      print('Firebase Service inicializado correctamente');
+
+      if (kDebugMode) {
+        debugPrint('✅ FirebaseService inicializado correctamente');
+      }
+
       return true;
     } catch (e) {
-      print('Error al inicializar Firebase Service: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error al inicializar FirebaseService: $e');
+      }
       _isInitialized = false;
       return false;
     }
@@ -78,13 +58,8 @@ class FirebaseService {
 
   static Future<void> _initializeMessaging() async {
     try {
-      if (_messaging == null) {
-        print('Messaging no está disponible');
-        return;
-      }
-
       // Solicitar permisos para notificaciones
-      NotificationSettings settings = await _messaging!.requestPermission(
+      NotificationSettings settings = await messaging.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -95,66 +70,65 @@ class FirebaseService {
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        print('Usuario autorizó las notificaciones');
+        if (kDebugMode) {
+          debugPrint('✅ Usuario autorizó las notificaciones');
+        }
       } else if (settings.authorizationStatus ==
           AuthorizationStatus.provisional) {
-        print('Usuario autorizó las notificaciones provisionales');
+        if (kDebugMode) {
+          debugPrint('✅ Usuario autorizó las notificaciones provisionales');
+        }
       } else {
-        print('Usuario denegó las notificaciones');
+        if (kDebugMode) {
+          debugPrint('⚠️ Usuario denegó las notificaciones');
+        }
       }
 
       // Obtener token FCM
-      String? token = await _messaging!.getToken();
-      print('FCM Token: $token');
+      String? token = await messaging.getToken();
+      if (kDebugMode) {
+        debugPrint('📱 FCM Token: $token');
+      }
 
       // Configurar manejo de mensajes en primer plano
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print(
-            'Mensaje recibido en primer plano: ${message.notification?.title}');
+        if (kDebugMode) {
+          debugPrint('📩 Mensaje recibido: ${message.notification?.title}');
+        }
       });
     } catch (e) {
-      print('Error al inicializar messaging: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error al inicializar messaging: $e');
+      }
     }
   }
 
-  // Colecciones de Firestore
+  // ✅ Colecciones simplificadas (sin verificaciones complicadas)
   static CollectionReference get usersCollection {
-    if (!_isInitialized || _firestore == null) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _firestore!.collection('users');
+    return firestore.collection('users');
   }
 
   static CollectionReference get servicesCollection {
-    if (!_isInitialized || _firestore == null) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _firestore!.collection('services');
+    return firestore.collection('services');
   }
 
   static CollectionReference get bookingsCollection {
-    if (!_isInitialized || _firestore == null) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _firestore!.collection('bookings');
+    return firestore.collection('bookings');
   }
 
   static CollectionReference get reviewsCollection {
-    if (!_isInitialized || _firestore == null) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
-    }
-    return _firestore!.collection('reviews');
+    return firestore.collection('reviews');
   }
 
   static CollectionReference get chatsCollection {
-    if (!_isInitialized || _firestore == null) {
-      throw Exception(
-          'Firebase no está inicializado. Llama a initialize() primero.');
+    return firestore.collection('chats');
+  }
+
+  // ✅ Método de utilidad para verificar si todo está listo
+  static Future<bool> ensureInitialized() async {
+    if (!_isInitialized) {
+      return await initialize();
     }
-    return _firestore!.collection('chats');
+    return true;
   }
 }

@@ -29,11 +29,15 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   DateTime? _selectedDate;
   String? _selectedTime;
   int _estimatedHours = 1;
+  bool _isFirstLoad = true; // <-- Agrega este flag
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserAddress();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      _loadUserAddress();
+      _isFirstLoad = false;
+    }
   }
 
   void _loadUserAddress() {
@@ -130,7 +134,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1 * 255),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(

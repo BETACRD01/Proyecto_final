@@ -4,6 +4,7 @@ import 'core/constants/app_routes.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/provider_registration_form.dart'; // ✅ NUEVO IMPORT
 import 'screens/auth/profile_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/service_list_screen.dart';
@@ -73,6 +74,10 @@ class ManachiyKanKusataApp extends StatelessWidget {
         AppRoutes.providerBookings: (context) => const ProviderBookings(),
         AppRoutes.map: (context) => const MapScreen(),
         AppRoutes.chat: (context) => const ChatScreen(),
+
+        // ✅ NUEVA RUTA AGREGADA
+        AppRoutes.providerRegistrationForm: (context) =>
+            const ProviderRegistrationForm(),
       },
     );
   }

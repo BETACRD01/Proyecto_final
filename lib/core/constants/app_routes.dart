@@ -16,4 +16,5 @@ class AppRoutes {
   static const String chat = '/chat';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
+  static const String providerRegistrationForm = '/provider-registration-form';
 }

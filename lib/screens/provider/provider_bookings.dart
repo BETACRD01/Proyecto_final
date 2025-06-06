@@ -135,16 +135,15 @@ class _ProviderBookingsState extends State<ProviderBookings>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ]),
       child: InkWell(
         onTap: () {
           Navigator.pushNamed(
@@ -371,16 +370,18 @@ class _ProviderBookingsState extends State<ProviderBookings>
           Provider.of<BookingProvider>(context, listen: false);
       await bookingProvider.updateBookingStatus(booking.id, newStatus);
 
-      if (context.mounted) {
+      if (mounted) {
+        // ← Cambio aquí
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Estado de reserva actualizado'),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
+        // ← Cambio aquí
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al actualizar estado: $e'),

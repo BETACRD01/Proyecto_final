@@ -118,13 +118,15 @@ class _ProviderServicesState extends State<ProviderServices> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: const [
+          // ← Agregar const aquí (línea 121)
           BoxShadow(
+            // ← Línea 122
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2), // ← Líneas 122-126
           ),
-        ],
+        ], // ← Línea 127
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -352,7 +354,9 @@ class _ProviderServicesState extends State<ProviderServices> {
 
     bool success = await serviceProvider.updateService(updatedService);
 
-    if (success && context.mounted) {
+    // Código corregido - reemplaza tu código actual:
+    if (success && mounted) {
+      // ← Cambiar context.mounted por mounted
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

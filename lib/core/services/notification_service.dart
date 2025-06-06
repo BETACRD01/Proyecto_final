@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:developer' as dev;
 // Comentado temporalmente flutter_local_notifications
 // import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -36,7 +37,7 @@ class NotificationService {
 
   static void _handleForegroundMessage(RemoteMessage message) {
     // Temporalmente solo imprimir el mensaje
-    print('Mensaje en primer plano: ${message.notification?.title}');
+    dev.log('Mensaje en primer plano: ${message.notification?.title}');
     // _showLocalNotification(
     //   title: message.notification?.title ?? 'Nueva notificación',
     //   body: message.notification?.body ?? '',
@@ -44,7 +45,7 @@ class NotificationService {
   }
 
   static void _handleBackgroundMessage(RemoteMessage message) {
-    print('Mensaje en segundo plano: ${message.notification?.title}');
+    dev.log('Mensaje en segundo plano: ${message.notification?.title}');
   }
 
   // Comentado temporalmente
@@ -79,6 +80,6 @@ class NotificationService {
   }) async {
     // Aquí implementarías el envío de notificaciones push
     // usando Firebase Cloud Functions o tu backend
-    print('Enviando notificación a $userId: $title');
+    dev.log('Enviando notificación a $userId: $title');
   }
 }

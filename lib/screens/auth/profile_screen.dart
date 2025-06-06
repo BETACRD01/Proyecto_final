@@ -25,11 +25,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _cityController = TextEditingController();
 
   bool _isEditing = false;
+  bool _isFirstLoad = true; // <-- Agrega este flag
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserData();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      _isFirstLoad = false;
+      Future.microtask(() async {
+        await Provider.of<AuthProvider>(context, listen: false)
+            .checkAuthStatus();
+        _loadUserData();
+      });
+    }
   }
 
   void _loadUserData() {
@@ -233,8 +241,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: user.userType == UserType.provider
-                ? AppColors.primary.withOpacity(0.1)
-                : AppColors.secondary.withOpacity(0.1),
+                ? AppColors.primary.withValues(alpha: 0.1 * 255)
+                : AppColors.secondary.withValues(alpha: 0.1 * 255),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -445,9 +453,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () async {
               Navigator.pop(context);
               await Provider.of<AuthProvider>(context, listen: false).signOut();
-              if (mounted) {
-                Navigator.pushReplacementNamed(context, AppRoutes.login);
-              }
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, AppRoutes.login);
             },
             child: const Text(
               'Cerrar Sesión',
