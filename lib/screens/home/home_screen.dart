@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
-import '../../core/constants/app_routes.dart';
-import '../../core/widgets/loading_widget.dart';
-import '../../core/widgets/error_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
-import '../../models/service_model.dart';
+import 'search_screen.dart';
+import '../auth/profile_screen.dart'; // ✅ AGREGAR ESTE IMPORT
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -34,6 +32,18 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Método para navegar a la tab de búsqueda con parámetros
+  void navigateToSearch({String? initialQuery, String? category}) {
+    setState(() {
+      _currentIndex = 1; // Tab de búsqueda
+    });
+    _pageController.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,11 +54,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
-        children: const [
-          _HomeTab(),
-          _SearchTab(),
-          _BookingsTab(),
-          _ProfileTab(),
+        children: [
+          _HomeTab(onNavigateToSearch: navigateToSearch),
+          const SearchScreen(),
+          const _BookingsTab(),
+          const ProfileScreen(), // ✅ CAMBIO: Usar ProfileScreen real en lugar de _ProfileTab
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -94,7 +104,9 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+  final Function({String? initialQuery, String? category}) onNavigateToSearch;
+
+  const _HomeTab({required this.onNavigateToSearch});
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +118,6 @@ class _HomeTab extends StatelessWidget {
           children: [
             // Header
             _buildHeader(context),
-            const SizedBox(height: 24),
-
-            // Búsqueda rápida
-            _buildQuickSearch(context),
             const SizedBox(height: 24),
 
             // Categorías de servicios
@@ -168,7 +176,12 @@ class _HomeTab extends StatelessWidget {
                 icon: const Icon(Icons.notifications_outlined,
                     color: Colors.white),
                 onPressed: () {
-                  // Navegar a notificaciones
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notificaciones próximamente'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
                 },
               ),
             ),
@@ -178,73 +191,26 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickSearch(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Buscar servicios...',
-          hintStyle: const TextStyle(color: AppColors.textHint),
-          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        onTap: () {
-          Navigator.pushNamed(context, AppRoutes.services);
-        },
-        readOnly: true,
-      ),
-    );
-  }
-
   Widget _buildServiceCategories(BuildContext context) {
+    // Solo las 4 categorías que ofreces + "Más"
     final categories = [
       {
         'name': 'Limpieza',
         'icon': Icons.cleaning_services,
-        'category': ServiceCategory.cleaning
+        'category': 'Limpieza'
       },
-      {
-        'name': 'Plomería',
-        'icon': Icons.plumbing,
-        'category': ServiceCategory.plumbing
-      },
+      {'name': 'Plomería', 'icon': Icons.plumbing, 'category': 'Plomería'},
       {
         'name': 'Electricidad',
         'icon': Icons.electrical_services,
-        'category': ServiceCategory.electricity
+        'category': 'Electricidad'
       },
       {
         'name': 'Carpintería',
-        'icon': Icons.carpenter,
-        'category': ServiceCategory.carpentry
+        'icon': Icons.handyman,
+        'category': 'Carpintería'
       },
-      {
-        'name': 'Jardinería',
-        'icon': Icons.grass,
-        'category': ServiceCategory.gardening
-      },
-      {
-        'name': 'Otros',
-        'icon': Icons.more_horiz,
-        'category': ServiceCategory.other
-      },
+      {'name': 'Más', 'icon': Icons.more_horiz, 'category': null},
     ];
 
     return Column(
@@ -263,7 +229,7 @@ class _HomeTab extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.services);
+                onNavigateToSearch();
               },
               child: const Text(
                 'Ver todas',
@@ -276,61 +242,96 @@ class _HomeTab extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
-          ),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final category = categories[index];
-            return GestureDetector(
-              onTap: () {
-                Provider.of<ServiceProvider>(context, listen: false)
-                    .setCategory(category['category'] as ServiceCategory);
-                Navigator.pushNamed(context, AppRoutes.services);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadow,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      category['icon'] as IconData,
-                      size: 32,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      category['name'] as String,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+        // Layout en fila horizontal para las 5 categorías
+        Row(
+          children: [
+            // 4 categorías principales
+            ...categories.take(4).map((category) => Expanded(
+                  child: _buildCategoryItem(
+                    context,
+                    category['name'] as String,
+                    category['icon'] as IconData,
+                    category['category'] as String?,
+                  ),
+                )),
+            // Botón "Más"
+            Expanded(
+              child: _buildCategoryItem(
+                context,
+                categories[4]['name'] as String,
+                categories[4]['icon'] as IconData,
+                null,
+                isMore: true,
               ),
-            );
-          },
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildCategoryItem(
+      BuildContext context, String name, IconData icon, String? category,
+      {bool isMore = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (isMore) {
+          // Mostrar mensaje de próximas actualizaciones
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Más categorías próximamente'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          // Mostrar mensaje temporal de proveedores en desarrollo
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Proveedores de $category próximamente'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: isMore
+                    ? Colors.grey[200]
+                    : AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isMore
+                      ? Colors.grey[400]!
+                      : AppColors.primary.withOpacity(0.3),
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: isMore ? Colors.grey[600] : AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isMore ? Colors.grey[600] : AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -351,7 +352,7 @@ class _HomeTab extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.services);
+                onNavigateToSearch();
               },
               child: const Text(
                 'Ver todos',
@@ -364,140 +365,44 @@ class _HomeTab extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Consumer<ServiceProvider>(
-          builder: (context, serviceProvider, child) {
-            if (serviceProvider.isLoading) {
-              return const LoadingWidget();
-            }
-
-            if (serviceProvider.errorMessage != null) {
-              return CustomErrorWidget(
-                message: serviceProvider.errorMessage!,
-                onRetry: () => serviceProvider.loadServices(),
-              );
-            }
-
-            final popularServices = serviceProvider.getPopularServices();
-
-            if (popularServices.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No hay servicios disponibles',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              );
-            }
-
-            return SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: popularServices.length,
-                itemBuilder: (context, index) {
-                  final service = popularServices[index];
-                  return _buildServiceCard(context, service);
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildServiceCard(BuildContext context, ServiceModel service) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
+        Container(
+          height: 140,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Imagen del servicio
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.home_repair_service,
-                size: 40,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(12),
+          child: const Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Icon(
+                  Icons.trending_up,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                SizedBox(height: 12),
                 Text(
-                  service.name,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  'Servicios populares',
+                  style: TextStyle(
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  service.providerName,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  'En desarrollo',
+                  style: TextStyle(
+                    fontSize: 14,
                     color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 14,
-                      color: Colors.amber,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      service.rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '\$${service.pricePerHour.toStringAsFixed(0)}/h',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -514,35 +419,44 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // Aquí implementarías la lista de proveedores destacados
         Container(
           height: 120,
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
           ),
           child: const Center(
-            child: Text(
-              'Proveedores destacados próximamente',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Proveedores destacados',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'En desarrollo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SearchTab extends StatelessWidget {
-  const _SearchTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Pantalla de Búsqueda - Por implementar'),
     );
   }
 }
@@ -552,19 +466,38 @@ class _BookingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Pantalla de Reservas - Por implementar'),
+    return const SafeArea(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 80,
+              color: AppColors.textSecondary,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Pantalla de Reservas',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'En desarrollo',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Pantalla de Perfil - Por implementar'),
-    );
-  }
-}
+// ✅ ELIMINAR: Ya no necesitamos _ProfileTab porque usamos ProfileScreen directamente

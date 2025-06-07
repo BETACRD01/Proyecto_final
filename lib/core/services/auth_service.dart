@@ -126,6 +126,25 @@ class AuthService {
       return false;
     }
   }
+// AGREGAR ESTE MÉTODO AL FINAL DE TU AuthService EXISTENTE
+
+  /// Actualiza solo la imagen de perfil del usuario
+  static Future<bool> updateProfileImage(String userId, String imageUrl) async {
+    try {
+      print('🔄 Actualizando imagen en Firestore para usuario: $userId');
+
+      await _firestore.collection('users').doc(userId).update({
+        'profileImageUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Imagen actualizada en Firestore');
+      return true;
+    } catch (e) {
+      print('❌ Error updating profile image in Firestore: $e');
+      return false;
+    }
+  }
 
   // Restablecer contraseña
   static Future<bool> resetPassword(String email) async {

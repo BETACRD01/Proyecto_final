@@ -49,8 +49,8 @@ class UserModel {
       city: map['city'] ?? '',
       userType: UserType.values[map['userType'] ?? 0],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null 
-          ? (map['updatedAt'] as Timestamp).toDate() 
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] as Timestamp).toDate()
           : null,
       isActive: map['isActive'] ?? true,
       profileImageUrl: map['profileImageUrl'],
