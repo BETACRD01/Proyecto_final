@@ -4,11 +4,11 @@ class DateUtils {
   static List<DateTime> getAvailableDates() {
     List<DateTime> dates = [];
     DateTime now = DateTime.now();
-    
+
     for (int i = 1; i <= 30; i++) {
       dates.add(now.add(Duration(days: i)));
     }
-    
+
     return dates;
   }
 
@@ -30,7 +30,8 @@ class DateUtils {
 
   static bool isDateAvailable(DateTime date) {
     DateTime now = DateTime.now();
-    return date.isAfter(now) && date.isBefore(now.add(const Duration(days: 30)));
+    return date.isAfter(now) &&
+        date.isBefore(now.add(const Duration(days: 30)));
   }
 
   static bool isTimeSlotAvailable(String timeSlot, DateTime date) {
@@ -52,7 +53,7 @@ class DateUtils {
     List<String> timeParts = time.split(':');
     int hour = int.parse(timeParts[0]);
     int minute = int.parse(timeParts[1]);
-    
+
     return DateTime(date.year, date.month, date.day, hour, minute);
   }
 }

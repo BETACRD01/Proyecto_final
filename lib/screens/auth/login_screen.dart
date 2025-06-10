@@ -1,3 +1,12 @@
+// screens/auth/login_screen.dart
+//
+// Pantalla de autenticación principal
+// Maneja login con email/contraseña y navegación por tipo de usuario
+// Soporta: admin, provider, client
+//
+// Autor: [Tu Nombre]
+// Versión: 1.0.0
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -7,7 +16,15 @@ import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
 import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/user_model.dart';
 
+/// Pantalla principal de autenticación
+///
+/// Funcionalidades:
+/// - Login con email/contraseña
+/// - Navegación automática por tipo de usuario
+/// - Recuperación de contraseña
+/// - Validación de formularios
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
@@ -16,29 +33,62 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Controladores del formulario
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
+    // Liberar recursos para evitar memory leaks
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  /// Maneja el proceso de login completo
+  ///
+  /// Flujo:
+  /// 1. Valida formulario
+  /// 2. Autentica con AuthProvider
+  /// 3. Determina tipo de usuario
+  /// 4. Navega al dashboard correspondiente
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+      // Ejecutar autenticación
       bool success = await authProvider.signIn(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        final user = authProvider.currentUser;
+
+        // Debug info
+        debugPrint('🔍 DEBUG - Login exitoso:');
+        debugPrint('- Usuario ID: ${user?.id}');
+        debugPrint('- Nombre: ${user?.name}');
+        debugPrint('- Email: ${user?.email}');
+        debugPrint('- UserType: ${user?.userType}');
+        debugPrint('- UserType index: ${user?.userType.index}');
+
+        // Navegación por tipo de usuario
+        if (user?.userType == UserType.admin) {
+          debugPrint(
+              '✅ Detectado como ADMINISTRADOR - Redirigiendo a AdminHome');
+          Navigator.pushReplacementNamed(context, AppRoutes.adminHome);
+        } else if (user?.userType == UserType.provider) {
+          debugPrint(
+              '✅ Detectado como PROVEEDOR - Redirigiendo a ProviderHome');
+          Navigator.pushReplacementNamed(context, AppRoutes.providerHome);
+        } else {
+          debugPrint('✅ Detectado como CLIENTE - Redirigiendo a Home');
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
       } else if (mounted) {
+        // Mostrar error de autenticación
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
@@ -63,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // Logo y título
+                // Header: Logo y título
                 Center(
                   child: Column(
                     children: [
@@ -104,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 48),
 
-                // Campos de entrada
+                // Formulario: Email y contraseña
                 CustomTextField(
                   label: AppStrings.email,
                   controller: _emailController,
@@ -125,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                // Olvidé mi contraseña
+                // Enlace: Recuperar contraseña
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -142,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 32),
 
-                // Botón de login
+                // Botón principal: Login
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
                     return CustomButton(
@@ -155,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Divider
+                // Divisor visual
                 const Row(
                   children: [
                     Expanded(child: Divider(color: AppColors.divider)),
@@ -175,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Botón de registro
+                // Botón secundario: Registro
                 CustomButton(
                   text: 'Crear cuenta nueva',
                   onPressed: () {
@@ -193,6 +243,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Muestra diálogo para recuperación de contraseña
+  ///
+  /// Permite al usuario solicitar un enlace de recuperación via email
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController();
 
@@ -227,13 +280,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? null
                     : () async {
                         if (emailController.text.isNotEmpty) {
+                          // Enviar solicitud de recuperación
                           bool success = await authProvider.resetPassword(
                             emailController.text.trim(),
                           );
 
-                          if (!mounted) return; // <-- Esto es correcto
+                          if (!mounted) return;
 
                           Navigator.pop(context);
+                          // Mostrar resultado
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(

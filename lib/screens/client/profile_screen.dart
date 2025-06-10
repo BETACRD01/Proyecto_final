@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
-import '../../../core/widgets/loading_widget.dart'; // Tu LoadingWidget
+import '../../../core/widgets/loading_widget.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/image_picker_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/user_model.dart';
 
@@ -29,10 +30,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   // Estados locales
   bool _isEditing = false;
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  double _uploadProgress = 0.0;
   File? _selectedImage;
   late TabController _tabController;
-
-  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -69,26 +70,96 @@ class _ProfileScreenState extends State<ProfileScreen>
         _descriptionController.text = user.description ?? '';
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
     }
   }
 
+  /// Selecciona y sube una imagen de perfil
   Future<void> _pickImage() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 75,
-      );
+      // Mostrar diálogo de selección de imagen
+      final File? imageFile =
+          await ImagePickerService.showImageSourceSelection(context);
 
-      if (image != null) {
+      if (imageFile != null) {
+        // Validar tamaño de archivo (máximo 5MB)
+        final double fileSizeInMB =
+            await ImagePickerService.getFileSizeInMB(imageFile);
+        if (fileSizeInMB > 5) {
+          _showSnackBar('La imagen es muy grande. Máximo 5MB permitido.');
+          return;
+        }
+
+        // Validar que sea una imagen válida
+        if (!await ImagePickerService.isValidImage(imageFile)) {
+          _showSnackBar('Archivo no válido. Selecciona una imagen.');
+          return;
+        }
+
         setState(() {
-          _selectedImage = File(image.path);
+          _selectedImage = imageFile;
         });
+
+        // Subir imagen automáticamente
+        await _uploadProfileImage();
       }
     } catch (e) {
       _showSnackBar('Error al seleccionar imagen: $e');
+    }
+  }
+
+  /// Sube la imagen de perfil a Firebase Storage
+  Future<void> _uploadProfileImage() async {
+    if (_selectedImage == null) return;
+
+    setState(() {
+      _isUploadingImage = true;
+      _uploadProgress = 0.0;
+    });
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final user = authProvider.currentUser;
+
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      // Subir imagen con seguimiento de progreso
+      final String imageUrl = await StorageService.uploadProfileImage(
+        userId: user.id,
+        imageFile: _selectedImage!,
+        onProgress: (double progress) {
+          setState(() {
+            _uploadProgress = progress;
+          });
+        },
+      );
+
+      // Eliminar imagen anterior si existe
+      if (user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty) {
+        await StorageService.deleteProfileImage(user.profileImageUrl!);
+      }
+
+      // Actualizar usuario con nueva URL
+      bool success = await authProvider.updateProfileImageUrl(imageUrl);
+
+      if (success) {
+        _showSnackBar('Imagen de perfil actualizada', isSuccess: true);
+
+        // Limpiar imágenes antiguas en background
+        StorageService.cleanupOldImages(user.id);
+      } else {
+        _showSnackBar('Error al actualizar la imagen en el perfil');
+      }
+    } catch (e) {
+      _showSnackBar('Error al subir imagen: $e');
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+        _uploadProgress = 0.0;
+        _selectedImage = null;
+      });
     }
   }
 
@@ -118,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ? null
             : _descriptionController.text.trim(),
         userType: currentUser.userType,
-        profileImageUrl: currentUser.profileImageUrl,
+        profileImageUrl: currentUser.profileImageUrl, // Mantener imagen actual
         isActive: currentUser.isActive,
         rating: currentUser.rating,
         totalRatings: currentUser.totalRatings,
@@ -135,7 +206,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (success) {
         setState(() {
           _isEditing = false;
-          _selectedImage = null;
         });
 
         _showSnackBar('Perfil actualizado correctamente', isSuccess: true);
@@ -186,6 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  /// Función para cerrar sesión con confirmación
   Future<void> _logout() async {
     final authProvider = context.read<AuthProvider>();
 
@@ -240,9 +311,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: Colors.grey[50],
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          print(
-              '🏗️ Building ProfileScreen - isLoading: ${authProvider.isLoading}, user: ${authProvider.currentUser?.name ?? "null"}, isInitialized: ${authProvider.isInitialized}');
-
           // 1. Si AuthProvider no está inicializado, mostrar loading
           if (!authProvider.isInitialized) {
             return const Center(
@@ -273,7 +341,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () async {
-                      print('🔄 Refrescando datos del usuario...');
                       await authProvider.refreshUserData();
                     },
                     child: const Text('Reintentar'),
@@ -294,8 +361,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             );
           }
-
-          print('✅ Usuario cargado correctamente: ${user.name}');
 
           // 4. Mostrar la interfaz normal con overlay de loading si está actualizando
           return LoadingOverlay(
@@ -343,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               end: Alignment.bottomCenter,
               colors: [
                 AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
+                AppColors.primary.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -378,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -399,6 +464,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         IconButton(
           onPressed: () {
             setState(() => _isEditing = !_isEditing);
+            if (!_isEditing) {
+              // Si cancelamos edición, recargar datos
+              _loadUserData();
+            }
           },
           icon: Icon(
             _isEditing ? Icons.close : Icons.edit,
@@ -409,9 +478,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  /// Widget de imagen de perfil con indicador de progreso
   Widget _buildProfileImage(UserModel? user) {
     return GestureDetector(
-      onTap: _isEditing ? _pickImage : null,
+      onTap: _isEditing && !_isUploadingImage ? _pickImage : null,
       child: Stack(
         children: [
           Container(
@@ -425,40 +495,51 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: ClipOval(
-              child: _selectedImage != null
-                  ? Image.file(
-                      _selectedImage!,
-                      fit: BoxFit.cover,
-                    )
-                  : user?.profileImageUrl != null &&
-                          user!.profileImageUrl!.isNotEmpty
-                      ? Image.network(
-                          user.profileImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar();
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            );
-                          },
-                        )
-                      : _buildDefaultAvatar(),
+              child: _buildImageContent(user),
             ),
           ),
-          if (_isEditing)
+
+          // Indicador de progreso de subida
+          if (_isUploadingImage)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.6),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        value: _uploadProgress,
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${(_uploadProgress * 100).toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Icono de cámara para edición
+          if (_isEditing && !_isUploadingImage)
             Positioned(
               bottom: 0,
               right: 0,
@@ -478,6 +559,41 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
       ),
     );
+  }
+
+  /// Contenido de la imagen (local, red o por defecto)
+  Widget _buildImageContent(UserModel? user) {
+    // Imagen local seleccionada
+    if (_selectedImage != null) {
+      return Image.file(_selectedImage!, fit: BoxFit.cover);
+    }
+
+    // Imagen de perfil desde red
+    if (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty) {
+      return Image.network(
+        user.profileImageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultAvatar();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          );
+        },
+      );
+    }
+
+    // Avatar por defecto
+    return _buildDefaultAvatar();
   }
 
   Widget _buildDefaultAvatar() {
@@ -600,10 +716,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.3)),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.3)),
                               ),
                               child: Text(
                                 service,
@@ -765,6 +882,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           const SizedBox(height: 24),
+          // Botón de cerrar sesión
           CustomButton(
             text: 'Cerrar Sesión',
             onPressed: _logout,
@@ -814,7 +932,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -859,7 +977,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -933,6 +1051,65 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+// Widget LoadingOverlay personalizado
+class LoadingOverlay extends StatelessWidget {
+  final bool isLoading;
+  final Widget child;
+  final String? message;
+  final Color? backgroundColor;
+
+  const LoadingOverlay({
+    Key? key,
+    required this.isLoading,
+    required this.child,
+    this.message,
+    this.backgroundColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        if (isLoading)
+          Container(
+            color: backgroundColor ?? Colors.black.withValues(alpha: 0.3),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      message ?? 'Cargando...',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

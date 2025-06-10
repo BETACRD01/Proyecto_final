@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -123,14 +122,9 @@ class ImagePickerService {
     );
   }
 
-  /// Selecciona imagen desde la cámara
+  /// Selecciona imagen desde la cámara (image_picker maneja permisos automáticamente)
   static Future<File?> pickImageFromCamera() async {
     try {
-      // Verificar permisos de cámara
-      if (!await _requestCameraPermission()) {
-        throw Exception('Permisos de cámara denegados');
-      }
-
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 80,
@@ -144,20 +138,15 @@ class ImagePickerService {
       return await _processImage(File(pickedFile.path));
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error al tomar foto: $e');
+        debugPrint('❌ Error al tomar foto: $e');
       }
       rethrow;
     }
   }
 
-  /// Selecciona imagen desde la galería
+  /// Selecciona imagen desde la galería (image_picker maneja permisos automáticamente)
   static Future<File?> pickImageFromGallery() async {
     try {
-      // Verificar permisos de galería
-      if (!await _requestGalleryPermission()) {
-        throw Exception('Permisos de galería denegados');
-      }
-
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
@@ -171,7 +160,7 @@ class ImagePickerService {
       return await _processImage(File(pickedFile.path));
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error al seleccionar de galería: $e');
+        debugPrint('❌ Error al seleccionar de galería: $e');
       }
       rethrow;
     }
@@ -217,70 +206,20 @@ class ImagePickerService {
         final int newSize = processedBytes.length;
         final double compressionRatio =
             ((originalSize - newSize) / originalSize * 100);
-        print(
+        debugPrint(
             '✅ Imagen procesada: ${compressionRatio.toStringAsFixed(1)}% reducción');
-        print(
+        debugPrint(
             '   Tamaño original: ${(originalSize / 1024).toStringAsFixed(1)} KB');
-        print('   Tamaño final: ${(newSize / 1024).toStringAsFixed(1)} KB');
+        debugPrint(
+            '   Tamaño final: ${(newSize / 1024).toStringAsFixed(1)} KB');
       }
 
       return processedFile;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error al procesar imagen: $e');
+        debugPrint('❌ Error al procesar imagen: $e');
       }
       throw Exception('Error al procesar imagen: $e');
-    }
-  }
-
-  /// Solicita permisos de cámara
-  static Future<bool> _requestCameraPermission() async {
-    try {
-      final PermissionStatus status = await Permission.camera.request();
-      return status == PermissionStatus.granted;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error al solicitar permisos de cámara: $e');
-      }
-      return false;
-    }
-  }
-
-  /// Solicita permisos de galería
-  static Future<bool> _requestGalleryPermission() async {
-    try {
-      PermissionStatus status;
-
-      if (Platform.isAndroid) {
-        // Android 13+ usa diferentes permisos
-        if (await _isAndroid13OrHigher()) {
-          status = await Permission.photos.request();
-        } else {
-          status = await Permission.storage.request();
-        }
-      } else {
-        // iOS usa photos
-        status = await Permission.photos.request();
-      }
-
-      return status == PermissionStatus.granted;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error al solicitar permisos de galería: $e');
-      }
-      return false;
-    }
-  }
-
-  /// Verifica si es Android 13 o superior
-  static Future<bool> _isAndroid13OrHigher() async {
-    if (!Platform.isAndroid) return false;
-
-    try {
-      // Esta es una aproximación, en producción podrías usar device_info_plus
-      return true; // Asumir Android moderno por simplicidad
-    } catch (e) {
-      return false;
     }
   }
 

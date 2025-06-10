@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/widgets/custom_button.dart';
@@ -8,6 +11,470 @@ import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
 
+// 🔹 WIDGET PERSONALIZADO PARA SELECTOR DE FECHA CON DROPDOWNS
+class DateSelectorWidget extends StatefulWidget {
+  final String? initialValue;
+  final String label;
+  final Function(String) onDateChanged;
+  final String? Function(String?)? validator;
+
+  const DateSelectorWidget({
+    Key? key,
+    this.initialValue,
+    required this.label,
+    required this.onDateChanged,
+    this.validator,
+  }) : super(key: key);
+
+  @override
+  State<DateSelectorWidget> createState() => _DateSelectorWidgetState();
+}
+
+class _DateSelectorWidgetState extends State<DateSelectorWidget> {
+  String? selectedDay;
+  String? selectedMonth;
+  String? selectedYear;
+
+  // Lista de meses en español
+  final Map<String, String> months = {
+    '01': 'Enero',
+    '02': 'Febrero',
+    '03': 'Marzo',
+    '04': 'Abril',
+    '05': 'Mayo',
+    '06': 'Junio',
+    '07': 'Julio',
+    '08': 'Agosto',
+    '09': 'Septiembre',
+    '10': 'Octubre',
+    '11': 'Noviembre',
+    '12': 'Diciembre',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialValue != null && widget.initialValue!.isNotEmpty) {
+      _parseInitialDate(widget.initialValue!);
+    }
+  }
+
+  void _parseInitialDate(String date) {
+    try {
+      final parts = date.split('/');
+      if (parts.length == 3) {
+        selectedDay = parts[0];
+        selectedMonth = parts[1];
+        selectedYear = parts[2];
+      }
+    } catch (e) {
+      debugPrint('Error parseando fecha inicial: $e');
+    }
+  }
+
+  void _onDateChanged() {
+    if (selectedDay != null && selectedMonth != null && selectedYear != null) {
+      final dateString = '$selectedDay/$selectedMonth/$selectedYear';
+      widget.onDateChanged(dateString);
+    }
+  }
+
+  List<String> _getDaysForMonth() {
+    if (selectedMonth == null || selectedYear == null) {
+      return List.generate(
+          31, (index) => (index + 1).toString().padLeft(2, '0'));
+    }
+
+    final year = int.parse(selectedYear!);
+    final month = int.parse(selectedMonth!);
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+
+    return List.generate(
+        daysInMonth, (index) => (index + 1).toString().padLeft(2, '0'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentYear = DateTime.now().year;
+    final minAge = 14;
+    final maxAge = 75;
+    final years = List.generate(
+      maxAge - minAge + 1,
+      (index) => (currentYear - minAge - index).toString(),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.cake_outlined,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
+                      'Selecciona tu fecha de nacimiento',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  // Selector de día
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Día',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: selectedDay != null
+                                  ? AppColors.primary
+                                  : Colors.grey.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedDay,
+                              hint: const Text('--',
+                                  style: TextStyle(fontSize: 12)),
+                              isExpanded: true,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textPrimary),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('--',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                ..._getDaysForMonth().map((day) {
+                                  return DropdownMenuItem<String>(
+                                    value: day,
+                                    child: Text(day,
+                                        style: const TextStyle(fontSize: 12)),
+                                  );
+                                }).toList(),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedDay = value;
+                                  if (selectedMonth != null &&
+                                      selectedYear != null) {
+                                    final daysInMonth = _getDaysForMonth();
+                                    if (selectedDay != null &&
+                                        !daysInMonth.contains(selectedDay!)) {
+                                      selectedDay = null;
+                                    }
+                                  }
+                                });
+                                _onDateChanged();
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // Selector de mes
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Mes',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: selectedMonth != null
+                                  ? AppColors.primary
+                                  : Colors.grey.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedMonth,
+                              hint: const Text('--',
+                                  style: TextStyle(fontSize: 12)),
+                              isExpanded: true,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textPrimary),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('--',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                ...months.entries.map((entry) {
+                                  return DropdownMenuItem<String>(
+                                    value: entry.key,
+                                    child: Text(
+                                      entry.value,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMonth = value;
+                                  if (selectedDay != null &&
+                                      selectedYear != null) {
+                                    final daysInMonth = _getDaysForMonth();
+                                    if (!daysInMonth.contains(selectedDay!)) {
+                                      selectedDay = null;
+                                    }
+                                  }
+                                });
+                                _onDateChanged();
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // Selector de año
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Año',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: selectedYear != null
+                                  ? AppColors.primary
+                                  : Colors.grey.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedYear,
+                              hint: const Text('--',
+                                  style: TextStyle(fontSize: 12)),
+                              isExpanded: true,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textPrimary),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('--',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                ...years.map((year) {
+                                  return DropdownMenuItem<String>(
+                                    value: year,
+                                    child: Text(year,
+                                        style: const TextStyle(fontSize: 12)),
+                                  );
+                                }).toList(),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedYear = value;
+                                  if (selectedDay != null &&
+                                      selectedMonth != null) {
+                                    final daysInMonth = _getDaysForMonth();
+                                    if (!daysInMonth.contains(selectedDay!)) {
+                                      selectedDay = null;
+                                    }
+                                  }
+                                });
+                                _onDateChanged();
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Mostrar fecha seleccionada
+              if (selectedDay != null &&
+                  selectedMonth != null &&
+                  selectedYear != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppColors.primary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Fecha: $selectedDay de ${months[selectedMonth!]} de $selectedYear',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _calculateAge(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Mensaje de error si existe
+        if (widget.validator != null) ...[
+          const SizedBox(height: 4),
+          Builder(
+            builder: (context) {
+              final dateString = selectedDay != null &&
+                      selectedMonth != null &&
+                      selectedYear != null
+                  ? '$selectedDay/$selectedMonth/$selectedYear'
+                  : null;
+              final errorMessage = widget.validator!(dateString);
+
+              if (errorMessage != null) {
+                return Text(
+                  errorMessage,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.red,
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _calculateAge() {
+    if (selectedDay == null || selectedMonth == null || selectedYear == null) {
+      return '';
+    }
+
+    try {
+      final birthDate = DateTime(
+        int.parse(selectedYear!),
+        int.parse(selectedMonth!),
+        int.parse(selectedDay!),
+      );
+
+      final now = DateTime.now();
+      int age = now.year - birthDate.year;
+
+      if (now.month < birthDate.month ||
+          (now.month == birthDate.month && now.day < birthDate.day)) {
+        age--;
+      }
+
+      return 'Tienes $age años';
+    } catch (e) {
+      return '';
+    }
+  }
+}
+
+// 🔹 CLASE PRINCIPAL DEL REGISTRO
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
 
@@ -17,6 +484,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Controladores para clientes
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -27,24 +496,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _cedulaController = TextEditingController();
   final _dateOfBirthController = TextEditingController();
 
-  // Controladores adicionales para campos de proveedor
+  // Controladores para proveedores
+  final _providerNameController = TextEditingController();
+  final _providerEmailController = TextEditingController();
+  final _providerPhoneController = TextEditingController();
+  final _providerAddressController = TextEditingController();
+  final _providerCityController = TextEditingController();
+  final _providerPasswordController = TextEditingController();
+  final _providerConfirmPasswordController = TextEditingController();
+  final _providerCedulaController = TextEditingController();
+  final _providerDateOfBirthController = TextEditingController();
   final _experienceController = TextEditingController();
   final _servicesController = TextEditingController();
-  final _availabilityController = TextEditingController();
-  final _referencesController = TextEditingController();
-  final _certificationController = TextEditingController();
   final _emergencyContactController = TextEditingController();
 
   UserType _selectedUserType = UserType.client;
+  String _selectedAvailability = 'flexible';
 
-  // ✅ Variable para guardar la referencia del AuthProvider
+  // Variables para hoja de vida
+  File? _selectedCV;
+  String? _cvFileName;
+  bool _isUploadingCV = false;
+
   AuthProvider? _authProvider;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ✅ Guarda la referencia del provider
       _authProvider = context.read<AuthProvider>();
       _authProvider!.addListener(_onAuthStateChanged);
     });
@@ -52,10 +531,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    // ✅ Usa la referencia guardada, no context.read()
     _authProvider?.removeListener(_onAuthStateChanged);
 
-    // Dispose de todos los controladores
+    // Dispose controladores de clientes
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -65,12 +543,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     _cedulaController.dispose();
     _dateOfBirthController.dispose();
+
+    // Dispose controladores de proveedores
+    _providerNameController.dispose();
+    _providerEmailController.dispose();
+    _providerPhoneController.dispose();
+    _providerAddressController.dispose();
+    _providerCityController.dispose();
+    _providerPasswordController.dispose();
+    _providerConfirmPasswordController.dispose();
+    _providerCedulaController.dispose();
+    _providerDateOfBirthController.dispose();
     _experienceController.dispose();
     _servicesController.dispose();
-    _availabilityController.dispose();
-    _referencesController.dispose();
-    _certificationController.dispose();
     _emergencyContactController.dispose();
+
     super.dispose();
   }
 
@@ -98,7 +585,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          Navigator.pop(context); // Volver a login
+          Navigator.pop(context);
         }
       });
     }
@@ -129,41 +616,330 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // Método para seleccionar fecha de nacimiento
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate:
-          DateTime.now().subtract(const Duration(days: 6570)), // Mínimo 18 años
-      locale: const Locale('es', 'ES'),
-      helpText: 'Selecciona tu fecha de nacimiento',
-      cancelText: 'Cancelar',
-      confirmText: 'Confirmar',
-    );
-
-    if (picked != null) {
-      setState(() {
-        _dateOfBirthController.text =
-            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-      });
+  String? _validateEcuadorianID(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'La cédula es obligatoria';
     }
+
+    String cedula = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (cedula.length != 10) {
+      return 'La cédula debe tener 10 dígitos';
+    }
+
+    int provincia = int.tryParse(cedula.substring(0, 2)) ?? 0;
+    if (provincia < 1 || provincia > 24) {
+      return 'Código de provincia inválido';
+    }
+
+    int tercerDigito = int.tryParse(cedula[2]) ?? 0;
+    if (tercerDigito >= 6) {
+      return 'Cédula de persona natural inválida';
+    }
+
+    List<int> coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    int suma = 0;
+
+    for (int i = 0; i < 9; i++) {
+      int digito = int.parse(cedula[i]);
+      int resultado = digito * coeficientes[i];
+
+      if (resultado >= 10) {
+        resultado = resultado - 9;
+      }
+
+      suma += resultado;
+    }
+
+    int digitoVerificador = (10 - (suma % 10)) % 10;
+    int ultimoDigito = int.parse(cedula[9]);
+
+    if (digitoVerificador != ultimoDigito) {
+      return 'Cédula inválida - dígito verificador incorrecto';
+    }
+
+    return null;
+  }
+
+  Future<void> _selectCV() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final fileSize = await file.length();
+
+        const maxSize = 10 * 1024 * 1024;
+
+        if (fileSize > maxSize) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                        'El archivo es muy grande. Máximo permitido: 10MB'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        setState(() {
+          _selectedCV = file;
+          _cvFileName = result.files.single.name;
+        });
+
+        if (!mounted) return;
+        final fileSizeMB = (fileSize / (1024 * 1024)).toStringAsFixed(2);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                      'Archivo seleccionado: $_cvFileName ($fileSizeMB MB)'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Error al seleccionar archivo: $e')),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<String?> _uploadCVToFirebase() async {
+    if (_selectedCV == null) return null;
+
+    try {
+      setState(() {
+        _isUploadingCV = true;
+      });
+
+      String fileName =
+          'cv_${DateTime.now().millisecondsSinceEpoch}_$_cvFileName';
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child('providers_cv').child(fileName);
+
+      UploadTask uploadTask = storageRef.putFile(_selectedCV!);
+
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        debugPrint(
+            '🔄 Progreso de subida: ${(progress * 100).toStringAsFixed(1)}%');
+
+        if (mounted && progress < 1.0) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 2,
+                      backgroundColor: Colors.white30,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Subiendo CV: ${(progress * 100).toStringAsFixed(0)}%'),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 1),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      });
+
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadURL = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _isUploadingCV = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.cloud_done, color: Colors.white),
+                SizedBox(width: 8),
+                Text('CV subido exitosamente'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      return downloadURL;
+    } catch (e) {
+      setState(() {
+        _isUploadingCV = false;
+      });
+
+      if (!mounted) return null;
+
+      String errorMessage = 'Error al subir archivo';
+      if (e.toString().contains('network')) {
+        errorMessage = 'Error de conexión. Verifica tu internet';
+      } else if (e.toString().contains('permission')) {
+        errorMessage = 'Sin permisos para subir archivo';
+      } else if (e.toString().contains('quota')) {
+        errorMessage = 'Límite de almacenamiento excedido';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(errorMessage)),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: () => _selectCV(),
+          ),
+        ),
+      );
+
+      return null;
+    }
+  }
+
+  void _removeCVSelection() {
+    setState(() {
+      _selectedCV = null;
+      _cvFileName = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.delete, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Archivo removido'),
+          ],
+        ),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String? _validateNumbersOnly(String? value, String fieldName,
+      {int? minLength, int? maxLength}) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName es obligatorio';
+    }
+
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return '$fieldName debe contener solo números';
+    }
+
+    if (minLength != null && value.length < minLength) {
+      return '$fieldName debe tener al menos $minLength dígitos';
+    }
+
+    if (maxLength != null && value.length > maxLength) {
+      return '$fieldName debe tener máximo $maxLength dígitos';
+    }
+
+    return null;
   }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      await authProvider.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        city: _cityController.text.trim(),
-        userType: _selectedUserType,
-      );
+      Map<String, dynamic> userData;
+
+      if (_selectedUserType == UserType.client) {
+        userData = {
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'address': _addressController.text.trim(),
+          'city': _cityController.text.trim(),
+          'userType': _selectedUserType,
+          'cedula': _cedulaController.text.trim(),
+          'dateOfBirth': _dateOfBirthController.text.trim(),
+        };
+      } else {
+        String? cvURL;
+        if (_selectedCV != null) {
+          cvURL = await _uploadCVToFirebase();
+          if (cvURL == null) {
+            return;
+          }
+        }
+
+        userData = {
+          'email': _providerEmailController.text.trim(),
+          'password': _providerPasswordController.text,
+          'name': _providerNameController.text.trim(),
+          'phone': _providerPhoneController.text.trim(),
+          'address': _providerAddressController.text.trim(),
+          'city': _providerCityController.text.trim(),
+          'userType': _selectedUserType,
+          'cedula': _providerCedulaController.text.trim(),
+          'dateOfBirth': _providerDateOfBirthController.text.trim(),
+          'experience': _experienceController.text.trim(),
+          'services': _servicesController.text.trim(),
+          'availability': _selectedAvailability,
+          'emergencyContact': _emergencyContactController.text.trim(),
+          'cvURL': cvURL,
+          'cvFileName': _cvFileName,
+        };
+      }
+
+      await authProvider.signUpWithExtraData(userData);
     }
   }
 
@@ -184,7 +960,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Título
                 const Text(
                   'Únete a nuestra comunidad',
                   style: TextStyle(
@@ -208,7 +983,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 32),
 
-                // Tipo de usuario
                 const Text(
                   'Tipo de Usuario',
                   style: TextStyle(
@@ -241,15 +1015,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // Campos básicos (siempre visibles)
-                _buildBasicFields(),
-
-                // Campos adicionales para proveedores (condicionales)
-                if (_selectedUserType == UserType.provider) ...[
-                  const SizedBox(height: 32),
-                  _buildProviderFields(),
+                // Formularios separados
+                if (_selectedUserType == UserType.client) ...[
+                  _buildClientForm(),
+                ] else ...[
+                  _buildProviderForm(),
                 ],
 
                 const SizedBox(height: 32),
@@ -257,25 +1029,179 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Botón de registro
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
-                    return Column(
+                    return CustomButton(
+                      text: authProvider.isLoading
+                          ? (_selectedUserType == UserType.provider
+                              ? 'Enviando solicitud...'
+                              : 'Creando cuenta...')
+                          : (_selectedUserType == UserType.provider
+                              ? 'Enviar solicitud'
+                              : AppStrings.register),
+                      onPressed:
+                          authProvider.isLoading ? null : _handleRegister,
+                      isLoading: authProvider.isLoading,
+                    );
+                  },
+                ),
+
+                // Sección de hoja de vida - solo para proveedores
+                if (_selectedUserType == UserType.provider) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomButton(
-                          text: authProvider.isLoading
-                              ? (_selectedUserType == UserType.provider
-                                  ? 'Enviando solicitud...'
-                                  : 'Creando cuenta...')
-                              : (_selectedUserType == UserType.provider
-                                  ? 'Enviar solicitud'
-                                  : AppStrings.register),
-                          onPressed:
-                              authProvider.isLoading ? null : _handleRegister,
-                          isLoading: authProvider.isLoading,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.description_outlined,
+                              color: Colors.blue[600],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Hoja de Vida (CV)',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                            if (_selectedCV != null)
+                              IconButton(
+                                onPressed: _removeCVSelection,
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                tooltip: 'Remover archivo',
+                              ),
+                          ],
                         ),
-                        if (authProvider.isLoading) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Sube tu currículum vitae para que los clientes conozcan tu experiencia',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: _isUploadingCV ? null : _selectCV,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: _selectedCV != null
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _selectedCV != null
+                                    ? Colors.green
+                                    : Colors.grey.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                if (_isUploadingCV) ...[
+                                  const CircularProgressIndicator(),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Subiendo archivo...',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ] else if (_selectedCV != null) ...[
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _cvFileName ?? 'Archivo seleccionado',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Toca para cambiar archivo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  const Icon(
+                                    Icons.cloud_upload_outlined,
+                                    color: AppColors.textSecondary,
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Seleccionar hoja de vida',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'PDF, DOC o DOCX • Máximo 10MB',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_selectedCV == null) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            '💡 Opcional: Una buena hoja de vida aumenta tus posibilidades de conseguir clientes',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Loading indicator
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    if (authProvider.isLoading) {
+                      return Column(
+                        children: [
                           const SizedBox(height: 16),
                           Text(
                             _selectedUserType == UserType.provider
-                                ? 'Preparando tu solicitud...'
+                                ? 'Validando información...'
                                 : 'Configurando tu cuenta...',
                             style: const TextStyle(
                               color: AppColors.textSecondary,
@@ -284,8 +1210,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             textAlign: TextAlign.center,
                           ),
                         ],
-                      ],
-                    );
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
 
@@ -323,8 +1250,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Campos básicos (siempre visibles)
-  Widget _buildBasicFields() {
+  // Formulario para clientes
+  Widget _buildClientForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -366,23 +1293,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
-        // Campo de fecha con GestureDetector
-        GestureDetector(
-          onTap: () => _selectDate(context),
-          child: AbsorbPointer(
-            child: CustomTextField(
-              label: 'Fecha de nacimiento',
-              controller: _dateOfBirthController,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'La fecha de nacimiento es obligatoria';
-                }
-                return null;
-              },
-              prefixIcon: Icons.calendar_today_outlined,
-              hint: 'Toca para seleccionar fecha',
-            ),
-          ),
+        // Nuevo selector de fecha
+        DateSelectorWidget(
+          label: 'Fecha de nacimiento',
+          initialValue: _dateOfBirthController.text,
+          onDateChanged: (dateString) {
+            setState(() {
+              _dateOfBirthController.text = dateString;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'La fecha de nacimiento es obligatoria';
+            }
+
+            try {
+              final parts = value.split('/');
+              if (parts.length != 3) return 'Formato de fecha inválido';
+
+              final birthDate = DateTime(
+                int.parse(parts[2]),
+                int.parse(parts[1]),
+                int.parse(parts[0]),
+              );
+
+              final now = DateTime.now();
+              int age = now.year - birthDate.year;
+
+              if (now.month < birthDate.month ||
+                  (now.month == birthDate.month && now.day < birthDate.day)) {
+                age--;
+              }
+
+              if (age < 18) {
+                return 'Debes ser mayor de 18 años para registrarte';
+              }
+
+              if (age > 100) {
+                return 'Por favor verifica la fecha ingresada';
+              }
+            } catch (e) {
+              return 'Fecha inválida';
+            }
+
+            return null;
+          },
         ),
 
         const SizedBox(height: 16),
@@ -452,11 +1407,155 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Campos adicionales para proveedores
-  Widget _buildProviderFields() {
+  // Formulario para proveedores
+  Widget _buildProviderForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Información Personal',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: 'Nombre completo',
+          controller: _providerNameController,
+          validator: Validators.validateName,
+          prefixIcon: Icons.person_outline,
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: 'Cédula de ciudadanía ecuatoriana',
+          controller: _providerCedulaController,
+          validator: _validateEcuadorianID,
+          prefixIcon: Icons.badge_outlined,
+          keyboardType: TextInputType.number,
+          hint: 'Ej: 1234567890',
+        ),
+
+        const SizedBox(height: 16),
+
+        // Nuevo selector de fecha para proveedores
+        DateSelectorWidget(
+          label: 'Fecha de nacimiento',
+          initialValue: _providerDateOfBirthController.text,
+          onDateChanged: (dateString) {
+            setState(() {
+              _providerDateOfBirthController.text = dateString;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'La fecha de nacimiento es obligatoria';
+            }
+
+            try {
+              final parts = value.split('/');
+              if (parts.length != 3) return 'Formato de fecha inválido';
+
+              final birthDate = DateTime(
+                int.parse(parts[2]),
+                int.parse(parts[1]),
+                int.parse(parts[0]),
+              );
+
+              final now = DateTime.now();
+              int age = now.year - birthDate.year;
+
+              if (now.month < birthDate.month ||
+                  (now.month == birthDate.month && now.day < birthDate.day)) {
+                age--;
+              }
+
+              if (age < 18) {
+                return 'Debes ser mayor de 18 años para ser proveedor';
+              }
+
+              if (age > 75) {
+                return 'Edad máxima permitida: 75 años';
+              }
+            } catch (e) {
+              return 'Fecha inválida';
+            }
+
+            return null;
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: AppStrings.email,
+          controller: _providerEmailController,
+          validator: Validators.validateEmail,
+          isEmail: true,
+          prefixIcon: Icons.email_outlined,
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: 'Teléfono/Celular',
+          controller: _providerPhoneController,
+          validator: Validators.validatePhone,
+          isPhone: true,
+          prefixIcon: Icons.phone_outlined,
+          hint: 'Ej: +593 99 123 4567',
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: 'Dirección completa',
+          controller: _providerAddressController,
+          validator: (value) => Validators.validateRequired(value, 'Dirección'),
+          prefixIcon: Icons.location_on_outlined,
+          maxLines: 2,
+          hint: 'Calle, número, sector, referencias',
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: 'Ciudad',
+          controller: _providerCityController,
+          validator: (value) => Validators.validateRequired(value, 'Ciudad'),
+          prefixIcon: Icons.location_city_outlined,
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: AppStrings.password,
+          controller: _providerPasswordController,
+          validator: Validators.validatePassword,
+          isPassword: true,
+          prefixIcon: Icons.lock_outlined,
+        ),
+
+        const SizedBox(height: 16),
+
+        CustomTextField(
+          label: AppStrings.confirmPassword,
+          controller: _providerConfirmPasswordController,
+          validator: (value) => Validators.validateConfirmPassword(
+            value,
+            _providerPasswordController.text,
+          ),
+          isPassword: true,
+          prefixIcon: Icons.lock_outlined,
+        ),
+
+        const SizedBox(height: 32),
+
+        // Información profesional
         const Text(
           'Información Profesional',
           style: TextStyle(
@@ -471,10 +1570,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           label: 'Años de experiencia',
           controller: _experienceController,
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Ingresa tus años de experiencia';
-            }
-            final years = int.tryParse(value);
+            String? numberValidation = _validateNumbersOnly(
+                value, 'Años de experiencia',
+                minLength: 1, maxLength: 2);
+            if (numberValidation != null) return numberValidation;
+
+            final years = int.tryParse(value!);
             if (years == null || years < 0 || years > 50) {
               return 'Ingresa un número válido (0-50)';
             }
@@ -507,35 +1608,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
-        CustomTextField(
-          label: 'Horarios disponibles',
-          controller: _availabilityController,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Indica tu disponibilidad horaria';
-            }
-            return null;
-          },
-          prefixIcon: Icons.schedule,
-          maxLines: 2,
-          hint: 'Ej: Lunes a viernes 8:00am - 6:00pm, Sábados medio tiempo',
+        const Text(
+          'Disponibilidad horaria',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
         ),
+        const SizedBox(height: 8),
 
-        const SizedBox(height: 16),
-
-        CustomTextField(
-          label: 'Certificaciones o cursos',
-          controller: _certificationController,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Indica tus certificaciones o cursos relacionados';
-            }
-            return null;
-          },
-          prefixIcon: Icons.school_outlined,
-          maxLines: 3,
-          hint:
-              'Ej: Curso de primeros auxilios, certificación en limpieza industrial...',
+        Column(
+          children: [
+            _buildAvailabilityOption(
+              'flexible',
+              'Horario flexible',
+              'Puedo adaptarme a las necesidades del cliente',
+              Icons.schedule_outlined,
+            ),
+            _buildAvailabilityOption(
+              'morning',
+              'Solo mañanas',
+              'Lunes a sábado: 7:00 AM - 12:00 PM',
+              Icons.wb_sunny_outlined,
+            ),
+            _buildAvailabilityOption(
+              'afternoon',
+              'Solo tardes',
+              'Lunes a sábado: 1:00 PM - 6:00 PM',
+              Icons.wb_twilight_outlined,
+            ),
+            _buildAvailabilityOption(
+              'full_time',
+              'Tiempo completo',
+              'Lunes a sábado: 7:00 AM - 6:00 PM',
+              Icons.access_time,
+            ),
+          ],
         ),
 
         const SizedBox(height: 16),
@@ -543,31 +1652,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         CustomTextField(
           label: 'Contacto de emergencia',
           controller: _emergencyContactController,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Proporciona un contacto de emergencia';
-            }
-            return null;
-          },
+          validator: (value) => _validateNumbersOnly(
+              value, 'Contacto de emergencia',
+              minLength: 9, maxLength: 15),
           prefixIcon: Icons.emergency_outlined,
-          maxLines: 2,
-          hint: 'Nombre y teléfono de contacto de emergencia',
+          keyboardType: TextInputType.phone,
+          hint: 'Ej: 0987654321',
         ),
 
         const SizedBox(height: 16),
 
-        CustomTextField(
-          label: 'Referencias laborales',
-          controller: _referencesController,
-          prefixIcon: Icons.people_outline,
-          maxLines: 3,
-          hint:
-              'Nombres y teléfonos de clientes anteriores o empleadores (opcional)',
-        ),
-
-        const SizedBox(height: 16),
-
-        // Info sobre proceso de aprobación
+        // Info proceso de aprobación
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -582,7 +1677,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Row(
                 children: [
                   Icon(
-                    Icons.info_outline,
+                    Icons.verified_user_outlined,
                     color: AppColors.primary,
                     size: 24,
                   ),
@@ -601,7 +1696,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                '• Tu cédula será verificada\n• Se validarán tus referencias\n• Recibirás respuesta en 2-3 días hábiles\n• Podrás subir documentos adicionales después',
+                '• Tu cédula será verificada automáticamente\n• Validaremos tu información de contacto\n• Recibirás respuesta en 24-48 horas\n• Podrás cargar documentos adicionales desde tu perfil',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -614,7 +1709,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
-        // Términos y condiciones para proveedores
+        // Términos y condiciones
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -625,7 +1720,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           child: const Text(
-            'Al registrarte como proveedor, aceptas cumplir con nuestras políticas de calidad y estar disponible para verificaciones periódicas.',
+            'Al registrarte como proveedor, confirmas que toda la información es veraz y aceptas nuestros términos de verificación y calidad de servicio.',
             style: TextStyle(
               fontSize: 11,
               color: Colors.orange,
@@ -634,6 +1729,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Widget para opciones de disponibilidad
+  Widget _buildAvailabilityOption(
+      String value, String title, String description, IconData icon) {
+    bool isSelected = _selectedAvailability == value;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAvailability = value;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.05),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : Colors.grey.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : Colors.grey,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -649,14 +1814,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onTap: () {
         setState(() {
           _selectedUserType = userType;
-          // Limpiar campos de proveedor cuando cambie a cliente
+          // Limpiar campos al cambiar tipo
           if (userType == UserType.client) {
+            // Limpiar campos de proveedor
+            _providerNameController.clear();
+            _providerEmailController.clear();
+            _providerPhoneController.clear();
+            _providerAddressController.clear();
+            _providerCityController.clear();
+            _providerPasswordController.clear();
+            _providerConfirmPasswordController.clear();
+            _providerCedulaController.clear();
+            _providerDateOfBirthController.clear();
             _experienceController.clear();
             _servicesController.clear();
-            _availabilityController.clear();
-            _referencesController.clear();
-            _certificationController.clear();
             _emergencyContactController.clear();
+            _selectedAvailability = 'flexible';
+            _selectedCV = null;
+            _cvFileName = null;
+          } else {
+            // Limpiar campos de cliente
+            _nameController.clear();
+            _emailController.clear();
+            _phoneController.clear();
+            _addressController.clear();
+            _cityController.clear();
+            _passwordController.clear();
+            _confirmPasswordController.clear();
+            _cedulaController.clear();
+            _dateOfBirthController.clear();
           }
         });
       },

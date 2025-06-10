@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // ⭐ AGREGAR ESTO
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_routes.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/auth/provider_registration_form.dart'; // ✅ NUEVO IMPORT
-import 'screens/auth/profile_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/home/service_list_screen.dart';
-import 'screens/home/service_detail_screen.dart';
+import 'screens/auth/provider_registration_form.dart';
+import 'screens/client/profile_screen.dart';
+import 'screens/client/home_screen.dart';
+import 'screens/client/service_list_screen.dart';
+import 'screens/client/service_detail_screen.dart';
 import 'screens/booking/booking_form_screen.dart';
 import 'screens/booking/booking_list_screen.dart';
 import 'screens/booking/booking_detail_screen.dart';
@@ -17,6 +17,9 @@ import 'screens/provider/provider_services.dart';
 import 'screens/provider/provider_bookings.dart';
 import 'screens/common/map_screen.dart';
 import 'screens/common/chat_screen.dart';
+import 'screens/provider/provider_home_screen.dart';
+import 'screens/admin/admin_home_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 class ManachiyKanKusataApp extends StatelessWidget {
   const ManachiyKanKusataApp({Key? key}) : super(key: key);
@@ -26,6 +29,19 @@ class ManachiyKanKusataApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mañachiy kan Kusata',
       debugShowCheckedModeBanner: false,
+
+      // ⭐ LOCALIZACIONES AGREGADAS:
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'), // Español (Ecuador)
+        Locale('en', 'US'), // Inglés (backup)
+      ],
+      locale: const Locale('es', 'ES'), // Idioma por defecto español
+
       theme: ThemeData(
         primarySwatch: Colors.green,
         primaryColor: AppColors.primary,
@@ -56,6 +72,33 @@ class ManachiyKanKusataApp extends StatelessWidget {
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
         ),
+
+        // ⭐ TEMA ADICIONAL PARA DATE PICKER:
+        datePickerTheme: DatePickerThemeData(
+          backgroundColor: Colors.white,
+          headerBackgroundColor: AppColors.primary,
+          headerForegroundColor: Colors.white,
+          dayStyle: const TextStyle(color: AppColors.textPrimary),
+          yearStyle: const TextStyle(color: AppColors.textPrimary),
+          dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.selected)) {
+              return AppColors.primary;
+            }
+            return null;
+          }),
+          todayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.selected)) {
+              return AppColors.primary;
+            }
+            return AppColors.primary.withValues(alpha: 0.1);
+          }),
+          todayForegroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.selected)) {
+              return Colors.white;
+            }
+            return AppColors.primary;
+          }),
+        ),
       ),
       initialRoute: AppRoutes.splash,
       routes: {
@@ -74,10 +117,10 @@ class ManachiyKanKusataApp extends StatelessWidget {
         AppRoutes.providerBookings: (context) => const ProviderBookings(),
         AppRoutes.map: (context) => const MapScreen(),
         AppRoutes.chat: (context) => const ChatScreen(),
-
-        // ✅ NUEVA RUTA AGREGADA
+        AppRoutes.providerHome: (context) => const ProviderHomeScreen(),
         AppRoutes.providerRegistrationForm: (context) =>
             const ProviderRegistrationForm(),
+        AppRoutes.adminHome: (context) => const AdminHomeScreen(),
       },
     );
   }

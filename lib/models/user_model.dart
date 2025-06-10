@@ -16,8 +16,8 @@ class UserModel {
   final double? longitude;
   final double rating;
   final int totalRatings;
-  final List<String> services; // Para proveedores
-  final String? description; // Para proveedores
+  final List<String> services;
+  final String? description;
 
   UserModel({
     required this.id,
@@ -47,11 +47,11 @@ class UserModel {
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',
       city: map['city'] ?? '',
-      userType: UserType.values[map['userType'] ?? 0],
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null
-          ? (map['updatedAt'] as Timestamp).toDate()
-          : null,
+      // 🔥 CORRECCIÓN: Manejar mejor el userType
+      userType: _parseUserType(map['userType']),
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt:
+          map['updatedAt'] != null ? _parseDateTime(map['updatedAt']) : null,
       isActive: map['isActive'] ?? true,
       profileImageUrl: map['profileImageUrl'],
       latitude: map['latitude']?.toDouble(),
@@ -63,6 +63,49 @@ class UserModel {
     );
   }
 
+  // 🔹 MÉTODO HELPER PARA PARSEAR USERTYPE CORRECTAMENTE
+  static UserType _parseUserType(dynamic value) {
+    if (value == null) return UserType.client;
+
+    // Si es un string (como "provider", "admin", "client")
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'provider':
+          return UserType.provider;
+        case 'admin':
+          return UserType.admin;
+        case 'client':
+        default:
+          return UserType.client;
+      }
+    }
+
+    // Si es un int (como 0, 1, 2)
+    if (value is int) {
+      if (value >= 0 && value < UserType.values.length) {
+        return UserType.values[value];
+      }
+    }
+
+    // Default fallback
+    return UserType.client;
+  }
+
+  // 🔹 MÉTODO HELPER PARA PARSEAR DATETIME CORRECTAMENTE
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+
+    return DateTime.now();
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -71,7 +114,8 @@ class UserModel {
       'phone': phone,
       'address': address,
       'city': city,
-      'userType': userType.index,
+      // 🔹 GUARDAR COMO STRING PARA MAYOR CLARIDAD
+      'userType': userType.name, // "client", "provider", "admin"
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'isActive': isActive,
@@ -123,6 +167,11 @@ class UserModel {
       services: services ?? this.services,
       description: description ?? this.description,
     );
+  }
+
+  @override
+  String toString() {
+    return 'UserModel(id: $id, name: $name, email: $email, userType: ${userType.name})';
   }
 }
 

@@ -213,6 +213,39 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // 🔹 NUEVO MÉTODO PARA REGISTRO CON DATOS EXTRA
+  Future<bool> signUpWithExtraData(Map<String, dynamic> userData) async {
+    _setLoading(true);
+    _clearError();
+    _successMessage = null;
+
+    try {
+      print('📝 Registrando usuario con datos completos: ${userData['email']}');
+
+      UserModel? registeredUser =
+          await AuthService.registerUserWithExtraData(userData);
+
+      if (registeredUser != null) {
+        print('✅ Registro exitoso: ${registeredUser.email}');
+        _setSuccess(
+            '¡Cuenta creada exitosamente! Ya puedes iniciar sesión con tu email 📧');
+        _setLoading(false);
+        return true;
+      } else {
+        print('❌ Registro fallido');
+        _setError('Error al crear la cuenta');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error en registro: $e');
+      String errorMessage = _getAuthErrorMessage(e.toString());
+      _setError(errorMessage);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     _setLoading(true);
     try {
@@ -258,8 +291,6 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
-
-// AGREGAR ESTOS MÉTODOS AL FINAL DE TU AuthProvider EXISTENTE (antes de los getters finales)
 
   /// Actualiza solo la URL de la imagen de perfil
   Future<bool> updateProfileImageUrl(String imageUrl) async {
@@ -368,4 +399,3 @@ class AuthProvider with ChangeNotifier {
   String get userName => _currentUser?.name ?? 'Usuario';
   String get userEmail => _currentUser?.email ?? '';
 }
-//

@@ -1,4 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- 📷 PERMISOS PARA CÁMARA Y GALERÍA - AGREGAR AQUÍ -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    
+    <!-- Android 13+ (API 33+) permisos granulares -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    
+    <!-- Característica de cámara (opcional) -->
+    <uses-feature 
+        android:name="android.hardware.camera" 
+        android:required="false" />
+    
     <application
         android:label="flutter_application_manachyna_kusa_2_0"
         android:name="${applicationName}"
