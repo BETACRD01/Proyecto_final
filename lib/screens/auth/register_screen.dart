@@ -518,6 +518,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _cvFileName;
   bool _isUploadingCV = false;
 
+  // 🔹 NUEVA VARIABLE PARA CHECKBOX DE TÉRMINOS
+  bool _acceptedTerms = false;
+
   AuthProvider? _authProvider;
 
   @override
@@ -894,6 +897,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    // Validar términos para proveedores
+    if (_selectedUserType == UserType.provider && !_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Debes aceptar los términos para continuar'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -936,6 +959,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'emergencyContact': _emergencyContactController.text.trim(),
           'cvURL': cvURL,
           'cvFileName': _cvFileName,
+          'acceptedTerms': _acceptedTerms, // Guardar aceptación de términos
         };
       }
 
@@ -1043,154 +1067,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     );
                   },
                 ),
-
-                // Sección de hoja de vida - solo para proveedores
-                if (_selectedUserType == UserType.provider) ...[
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.blue.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.description_outlined,
-                              color: Colors.blue[600],
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'Hoja de Vida (CV)',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                            if (_selectedCV != null)
-                              IconButton(
-                                onPressed: _removeCVSelection,
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                                tooltip: 'Remover archivo',
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Sube tu currículum vitae para que los clientes conozcan tu experiencia',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: _isUploadingCV ? null : _selectCV,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: _selectedCV != null
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.grey.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _selectedCV != null
-                                    ? Colors.green
-                                    : Colors.grey.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                if (_isUploadingCV) ...[
-                                  const CircularProgressIndicator(),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Subiendo archivo...',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ] else if (_selectedCV != null) ...[
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 32,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _cvFileName ?? 'Archivo seleccionado',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Toca para cambiar archivo',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ] else ...[
-                                  const Icon(
-                                    Icons.cloud_upload_outlined,
-                                    color: AppColors.textSecondary,
-                                    size: 32,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Seleccionar hoja de vida',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'PDF, DOC o DOCX • Máximo 10MB',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (_selectedCV == null) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            '💡 Opcional: Una buena hoja de vida aumenta tus posibilidades de conseguir clientes',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
 
                 // Loading indicator
                 Consumer<AuthProvider>(
@@ -1442,7 +1318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
-        // Nuevo selector de fecha para proveedores
+        // Selector de fecha para proveedores
         DateSelectorWidget(
           label: 'Fecha de nacimiento',
           initialValue: _providerDateOfBirthController.text,
@@ -1662,6 +1538,153 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
+        // 🔹 SECCIÓN DE HOJA DE VIDA - MOVIDA AQUÍ (ARRIBA DEL PROCESO DE VERIFICACIÓN)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.description_outlined,
+                    color: Colors.blue[600],
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Hoja de Vida (CV)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  if (_selectedCV != null)
+                    IconButton(
+                      onPressed: _removeCVSelection,
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      tooltip: 'Remover archivo',
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sube tu currículum vitae para que los clientes conozcan tu experiencia',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _isUploadingCV ? null : _selectCV,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _selectedCV != null
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _selectedCV != null
+                          ? Colors.green
+                          : Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      if (_isUploadingCV) ...[
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Subiendo archivo...',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ] else if (_selectedCV != null) ...[
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _cvFileName ?? 'Archivo seleccionado',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Toca para cambiar archivo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ] else ...[
+                        const Icon(
+                          Icons.cloud_upload_outlined,
+                          color: AppColors.textSecondary,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Seleccionar hoja de vida',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'PDF, DOC o DOCX • Máximo 10MB',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              if (_selectedCV == null) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  '💡 Opcional: Una buena hoja de vida aumenta tus posibilidades de conseguir clientes',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
         // Info proceso de aprobación
         Container(
           padding: const EdgeInsets.all(16),
@@ -1709,23 +1732,147 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         const SizedBox(height: 16),
 
-        // Términos y condiciones
+        // 🔹 CHECKBOX DE TÉRMINOS Y CONDICIONES (REEMPLAZA EL CONTENEDOR ANTERIOR)
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: Colors.orange.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.orange.withValues(alpha: 0.3),
+              color: _acceptedTerms
+                  ? Colors.green.withValues(alpha: 0.5)
+                  : Colors.orange.withValues(alpha: 0.3),
+              width: _acceptedTerms ? 2 : 1,
             ),
           ),
-          child: const Text(
-            'Al registrarte como proveedor, confirmas que toda la información es veraz y aceptas nuestros términos de verificación y calidad de servicio.',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.orange,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.policy_outlined,
+                    color: _acceptedTerms ? Colors.green : Colors.orange,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Términos y Condiciones',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 🔹 CHECKBOX CON TEXTO
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (value) {
+                      setState(() {
+                        _acceptedTerms = value ?? false;
+                      });
+                    },
+                    activeColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _acceptedTerms = !_acceptedTerms;
+                        });
+                      },
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text:
+                                  'Al registrarme como proveedor, confirmo que toda la información es veraz y acepto los ',
+                            ),
+                            TextSpan(
+                              text:
+                                  'términos de verificación y calidad de servicio',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                            const TextSpan(text: ' de la plataforma.'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Mensaje de validación
+              if (!_acceptedTerms) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const SizedBox(width: 40), // Espacio del checkbox
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.orange[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Debes aceptar los términos para continuar',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const SizedBox(width: 40), // Espacio del checkbox
+                    const Icon(
+                      Icons.check_circle_outline,
+                      size: 16,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Términos aceptados correctamente',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.green[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -1832,6 +1979,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             _selectedAvailability = 'flexible';
             _selectedCV = null;
             _cvFileName = null;
+            _acceptedTerms = false; // Resetear términos
           } else {
             // Limpiar campos de cliente
             _nameController.clear();
@@ -1890,3 +2038,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+
+// 🔹 REFERENCIA DE VALIDACIÓN DE MÉTODOS PRIVADOS FALTANTES
+// Este comentario es para recordar que estas funciones están en la clase RegisterScreen
+
+/*
+Los siguientes métodos están incluidos en la primera parte del archivo:
+
+- _validateEcuadorianID()
+- _selectCV()
+- _uploadCVToFirebase()
+- _removeCVSelection()
+- _validateNumbersOnly()
+- _handleRegister()
+
+Para usar este código completo, debes:
+1. Copiar la primera parte (DateSelectorWidget + parte inicial de RegisterScreen)
+2. Copiar la segunda parte (métodos principales)
+3. Copiar esta tercera parte (formularios y widgets)
+
+El código está dividido en 3 partes por limitaciones de longitud.
+*/
