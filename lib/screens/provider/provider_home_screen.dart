@@ -6,7 +6,7 @@ import '../../models/user_model.dart';
 import 'provider_dashboard.dart';
 import 'provider_services.dart';
 import 'provider_bookings.dart';
-import '../common/chat_screen.dart';
+import '../client/chat_screen.dart';
 import '../client/profile_screen.dart';
 
 class ProviderHomeScreen extends StatefulWidget {

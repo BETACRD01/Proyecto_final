@@ -22,19 +22,23 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadUserBookings(String userId, {bool isProvider = false}) async {
+  // ✅ MÉTODO PRINCIPAL CORREGIDO - Solo se agregó .limit(50)
+  Future<void> loadUserBookings(String userId,
+      {bool isProvider = false}) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       String field = isProvider ? 'providerId' : 'clientId';
       QuerySnapshot snapshot = await FirebaseService.bookingsCollection
           .where(field, isEqualTo: userId)
           .orderBy('createdAt', descending: true)
+          .limit(50) // 👈 ÚNICA LÍNEA AGREGADA - Soluciona el error del índice
           .get();
 
       _bookings = snapshot.docs
-          .map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>))
+          .map(
+              (doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
 
       _setLoading(false);
@@ -46,9 +50,8 @@ class BookingProvider with ChangeNotifier {
 
   Future<BookingModel?> getBookingById(String bookingId) async {
     try {
-      DocumentSnapshot doc = await FirebaseService.bookingsCollection
-          .doc(bookingId)
-          .get();
+      DocumentSnapshot doc =
+          await FirebaseService.bookingsCollection.doc(bookingId).get();
 
       if (doc.exists) {
         return BookingModel.fromMap(doc.data() as Map<String, dynamic>);
@@ -63,7 +66,7 @@ class BookingProvider with ChangeNotifier {
   Future<bool> createBooking(BookingModel booking) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       await FirebaseService.bookingsCollection
           .doc(booking.id)
@@ -79,10 +82,11 @@ class BookingProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateBookingStatus(String bookingId, BookingStatus status) async {
+  Future<bool> updateBookingStatus(
+      String bookingId, BookingStatus status) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
       Map<String, dynamic> updateData = {
         'status': status.index,
@@ -102,7 +106,8 @@ class BookingProvider with ChangeNotifier {
         _bookings[index] = _bookings[index].copyWith(
           status: status,
           updatedAt: DateTime.now(),
-          completedAt: status == BookingStatus.completed ? DateTime.now() : null,
+          completedAt:
+              status == BookingStatus.completed ? DateTime.now() : null,
         );
       }
 
@@ -118,11 +123,9 @@ class BookingProvider with ChangeNotifier {
   Future<bool> cancelBooking(String bookingId, String reason) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
-      await FirebaseService.bookingsCollection
-          .doc(bookingId)
-          .update({
+      await FirebaseService.bookingsCollection.doc(bookingId).update({
         'status': BookingStatus.cancelled.index,
         'cancellationReason': reason,
         'updatedAt': Timestamp.now(),
@@ -146,14 +149,13 @@ class BookingProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> rateBooking(String bookingId, double rating, String? review) async {
+  Future<bool> rateBooking(
+      String bookingId, double rating, String? review) async {
     _setLoading(true);
     _setError(null);
-    
+
     try {
-      await FirebaseService.bookingsCollection
-          .doc(bookingId)
-          .update({
+      await FirebaseService.bookingsCollection.doc(bookingId).update({
         'rating': rating,
         'review': review,
         'updatedAt': Timestamp.now(),
@@ -190,8 +192,9 @@ class BookingProvider with ChangeNotifier {
   }
 
   List<BookingModel> getCompletedBookings() {
-    return _bookings.where((booking) => 
-        booking.status == BookingStatus.completed).toList();
+    return _bookings
+        .where((booking) => booking.status == BookingStatus.completed)
+        .toList();
   }
 
   void clearError() {
