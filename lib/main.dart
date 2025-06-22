@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
-import 'providers/auth_provider.dart';
-import 'providers/service_provider.dart';
-import 'providers/booking_provider.dart';
-import 'providers/user_provider.dart';
-import 'core/services/firebase_service.dart';
+import 'opciones_firebase.dart';
+import 'proveedores/proveedor_autenticacion.dart';
+import 'proveedores/proveedor_servicios.dart';
+import 'proveedores/proveedor_reservas.dart';
+import 'proveedores/proveedor_usuarios.dart';
+import 'nucleo/servicios/servicio_firebase.dart';
 import 'app.dart';
 
 void main() async {
@@ -58,3 +58,4 @@ void main() async {
     );
   }
 }
+
