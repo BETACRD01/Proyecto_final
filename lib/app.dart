@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import 'core/constants/app_colors.dart';
-import 'core/constants/app_routes.dart';
-import 'screens/common/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
-import 'screens/auth/provider_registration_form.dart'; // ✅ NUEVO IMPORT
-import 'screens/auth/profile_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/home/service_list_screen.dart';
-import 'screens/home/service_detail_screen.dart';
-import 'screens/booking/booking_form_screen.dart';
-import 'screens/booking/booking_list_screen.dart';
-import 'screens/booking/booking_detail_screen.dart';
-import 'screens/provider/provider_dashboard.dart';
-import 'screens/provider/provider_services.dart';
-import 'screens/provider/provider_bookings.dart';
-import 'screens/common/map_screen.dart';
-import 'screens/common/chat_screen.dart';
+import 'nucleo/constantes/rutas_app.dart';
+import 'pantallas/comunes/pantalla_carga.dart';
+import 'pantallas/autenticacion/pantalla_inicio_sesion.dart';
+import 'pantallas/autenticacion/pantalla_registro.dart';
+import 'pantallas/autenticacion/formulario_registro_proveedor.dart';
+import 'pantallas/cliente/pantalla_perfil.dart';
+import 'pantallas/cliente/pantalla_inicio.dart';
+import 'pantallas/cliente/client/reservas/pantalla_formulario_reserva.dart';
+import 'pantallas/cliente/client/reservas/pantalla_detalle_reserva.dart';
+import 'pantallas/proveedor/tablero_proveedor.dart';
+import 'pantallas/proveedor/servicios_proveedor.dart';
+import 'pantallas/comunes/pantalla_mapa.dart';
+import 'pantallas/cliente/pantalla_chat.dart';
+import 'pantallas/proveedor/pantalla_inicio_proveedor.dart';
+import 'pantallas/administrador/pantalla_inicio_administrador.dart';
+import 'pantallas/cliente/reservas_cliente.dart';
 
 class ManachiyKanKusataApp extends StatelessWidget {
   const ManachiyKanKusataApp({Key? key}) : super(key: key);
@@ -26,58 +24,41 @@ class ManachiyKanKusataApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mañachiy kan Kusata',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        primaryColor: AppColors.primary,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: AppColors.background,
-        fontFamily: 'Roboto',
-        textTheme: const TextTheme(
-          headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
-          bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          ),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-        ),
-      ),
+
+     //configuracion de geolocalizacion
+     //https://pub.dev/packages/geolocator
+    
+      
       initialRoute: AppRoutes.splash,
+      
       routes: {
+        // 🔹 AUTENTICACIÓN
         AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.login: (context) => const LoginScreen(),
         AppRoutes.register: (context) => const RegisterScreen(),
-        AppRoutes.home: (context) => const HomeScreen(),
+        
+        // 🔹 CLIENTE
+        AppRoutes.home: (context) => const PantallaInicioCliente(),
         AppRoutes.profile: (context) => const ProfileScreen(),
-        AppRoutes.services: (context) => const ServiceListScreen(),
-        AppRoutes.serviceDetail: (context) => const ServiceDetailScreen(),
-        AppRoutes.bookingForm: (context) => const BookingFormScreen(),
-        AppRoutes.bookings: (context) => const BookingListScreen(),
-        AppRoutes.bookingDetail: (context) => const BookingDetailScreen(),
+        
+        // 🔹 RESERVAS
+        AppRoutes.bookings: (context) => const PantallaListaReservas(),
+        AppRoutes.bookingForm: (context) => const PantallaFormularioReserva(),
+        AppRoutes.bookingDetail: (context) => const PantallaDetalleReserva(),
+        
+        // 🔹 PROVEEDOR
+        AppRoutes.providerHome: (context) => const ProviderHomeScreen(),
         AppRoutes.providerDashboard: (context) => const ProviderDashboard(),
-        AppRoutes.providerServices: (context) => const ProviderServices(),
-        AppRoutes.providerBookings: (context) => const ProviderBookings(),
+        AppRoutes.providerServices: (context) => const PantallaServiciosProveedor(), // ✅ Corregido
+        AppRoutes.providerBookings: (context) => const PantallaListaReservas(),
+        AppRoutes.providerRegistrationForm: (context) => const ProviderRegistrationForm(),
+        
+        // 🔹 ADMINISTRADOR
+        AppRoutes.adminHome: (context) => const AdminHomeScreen(),
+        
+        // 🔹 COMUNES
         AppRoutes.map: (context) => const MapScreen(),
         AppRoutes.chat: (context) => const ChatScreen(),
-
-        // ✅ NUEVA RUTA AGREGADA
-        AppRoutes.providerRegistrationForm: (context) =>
-            const ProviderRegistrationForm(),
       },
     );
   }
