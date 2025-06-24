@@ -5,7 +5,7 @@ import '../../nucleo/constantes/rutas_app.dart';
 import '../cliente/client/home/widget_cargando.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
 import '../../proveedores/proveedor_reservas.dart';
-import '../../proveedores/proveedor_servicios.dart';
+import 'servicios_proveedor/proveedores/proveedor_servicios.dart';
 import '../../modelos/modelo_usuario.dart';
 import '../../modelos/modelo_reserva.dart';
 

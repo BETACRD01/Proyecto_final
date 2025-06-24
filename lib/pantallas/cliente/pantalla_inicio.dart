@@ -1,7 +1,7 @@
 // pantallas/cliente/pantalla_inicio.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../proveedores/proveedor_servicios.dart';
+import '../proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
 import 'client/home/widget_encabezado.dart';
 import 'client/home/seccion_acciones_rapidas.dart';
 import 'client/home/seccion_servicios_populares.dart';

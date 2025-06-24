@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'opciones_firebase.dart';
 import 'proveedores/proveedor_autenticacion.dart';
-import 'proveedores/proveedor_servicios.dart';
+import 'pantallas/proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
 import 'proveedores/proveedor_reservas.dart';
 import 'proveedores/proveedor_usuarios.dart';
 import 'nucleo/servicios/servicio_firebase.dart';

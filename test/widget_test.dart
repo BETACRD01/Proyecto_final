@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_manachyna_kusa_2_0/app.dart';
 import 'package:flutter_application_manachyna_kusa_2_0/proveedores/proveedor_autenticacion.dart';
-import 'package:flutter_application_manachyna_kusa_2_0/proveedores/proveedor_servicios.dart';
+import 'package:flutter_application_manachyna_kusa_2_0/pantallas/proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
 import 'package:flutter_application_manachyna_kusa_2_0/proveedores/proveedor_reservas.dart';
 import 'package:flutter_application_manachyna_kusa_2_0/proveedores/proveedor_usuarios.dart';
 void main() {

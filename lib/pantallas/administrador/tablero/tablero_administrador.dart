@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../nucleo/constantes/colores_app.dart';
 import '../../../proveedores/proveedor_autenticacion.dart';
-import '../../../proveedores/proveedor_servicios.dart';
+import '../../proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);

@@ -4,7 +4,7 @@ import '../../nucleo/constantes/colores_app.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
 import '../../modelos/modelo_usuario.dart';
 import 'tablero_proveedor.dart';
-import 'servicios_proveedor.dart';
+import '../proveedor/servicios_proveedor.dart';
 import 'reservas_proveedor.dart';
 import '../cliente/pantalla_chat.dart';
 import '../cliente/pantalla_perfil.dart';

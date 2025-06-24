@@ -5,7 +5,7 @@ import '../../nucleo/constantes/colores_app.dart';
 import '../../nucleo/constantes/rutas_app.dart';
 import 'client/home/widget_cargando.dart';
 import '../../nucleo/widgets/widget_error.dart';
-import '../../proveedores/proveedor_servicios.dart';
+import '../proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
 import '../../modelos/modelo_servicio.dart';
 
 class SearchScreen extends StatefulWidget {
