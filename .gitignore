@@ -1,26 +1,36 @@
-# Archivos y carpetas generados por Flutter
+# Flutter/Dart/Pub related
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
-build/
-# Archivos de Android
+/build/
+**/doc/api/
+
+# Android related
 /android/app/debug
 /android/app/profile
 /android/app/release
-# Archivos de iOS
-/ios/Flutter/.last_build_id
-/ios/Flutter/App.framework
-/ios/Flutter/Flutter.framework
-/ios/Flutter/Generated.xcconfig
-/ios/Flutter/app.flx
-/ios/Flutter/app.zip
-/ios/Flutter/flutter_assets/
-/ios/ServiceDefinitions.json
-/ios/Runner/GeneratedPluginRegistrant.*
-# Archivos de configuración local
-*.lock
-*.log
+/android/app/google-services.json
+
+# iOS related
+/ios/Pods/
+/ios/Podfile.lock
+/ios/Runner.xcworkspace/
+/ios/Runner/GoogleService-Info.plist
+
+# Firebase & API Keys
+/lib/firebase_options.dart
+.env
+
+# IDE related
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# System files
 .DS_Store
+*.log
