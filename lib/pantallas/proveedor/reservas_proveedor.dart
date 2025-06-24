@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../nucleo/constantes/colores_app.dart';
 import '../../nucleo/constantes/rutas_app.dart';
-import '../../nucleo/widgets/widget_cargando.dart';
+import '../cliente/client/home/widget_cargando.dart';
 import '../../nucleo/widgets/widget_error.dart';
 import '../../nucleo/utilidades/ayudantes.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
@@ -68,8 +68,8 @@ class _ProviderBookingsState extends State<ProviderBookings>
       body: Consumer<BookingProvider>(
         builder: (context, bookingProvider, child) {
           if (bookingProvider.isLoading) {
-            return const LoadingWidget(message: 'Cargando reservas...');
-          }
+ return const WidgetCargando(mensaje: 'Cargando reservas...');
+}
 
           if (bookingProvider.errorMessage != null) {
             return CustomErrorWidget(

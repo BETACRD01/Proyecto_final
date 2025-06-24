@@ -10,7 +10,7 @@ class AppRoutes {
   static const String services = '/services';
   static const String serviceDetail = '/service-detail';
   static const String bookingForm = '/booking-form';
-  static const String bookings = '/bookings';
+  static const String bookings = '/bookings'; // ⭐ ASEGÚRATE DE TENER ESTA
   static const String bookingDetail = '/booking-detail';
 
   // 🔹 RUTAS DE PROVEEDOR

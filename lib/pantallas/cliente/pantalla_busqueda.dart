@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../nucleo/constantes/colores_app.dart';
 import '../../nucleo/constantes/rutas_app.dart';
-import '../../nucleo/widgets/widget_cargando.dart';
+import 'client/home/widget_cargando.dart';
 import '../../nucleo/widgets/widget_error.dart';
 import '../../proveedores/proveedor_servicios.dart';
 import '../../modelos/modelo_servicio.dart';
@@ -315,13 +315,12 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
-  Widget _buildQuickSearchView() {
-    return Consumer<ServiceProvider>(
-      builder: (context, serviceProvider, child) {
-        if (serviceProvider.isLoading) {
-          return const LoadingWidget();
-        }
-
+ Widget _buildQuickSearchView() {
+ return Consumer<ServiceProvider>(
+   builder: (context, serviceProvider, child) {
+     if (serviceProvider.isLoading) {
+       return const WidgetCargando();
+     }
         final services = serviceProvider.services;
 
         return Column(

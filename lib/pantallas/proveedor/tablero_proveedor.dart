@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../nucleo/constantes/colores_app.dart';
 import '../../nucleo/constantes/rutas_app.dart';
-import '../../nucleo/widgets/widget_cargando.dart';
+import '../cliente/client/home/widget_cargando.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
 import '../../proveedores/proveedor_reservas.dart';
 import '../../proveedores/proveedor_servicios.dart';
@@ -143,8 +143,8 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
     return Consumer2<BookingProvider, ServiceProvider>(
       builder: (context, bookingProvider, serviceProvider, child) {
         if (bookingProvider.isLoading || serviceProvider.isLoading) {
-          return const LoadingWidget();
-        }
+ return const WidgetCargando();
+}
 
         final totalBookings = bookingProvider.bookings.length;
         final pendingBookings =
@@ -246,8 +246,8 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
         Consumer<BookingProvider>(
           builder: (context, bookingProvider, child) {
             if (bookingProvider.isLoading) {
-              return const LoadingWidget();
-            }
+ return const WidgetCargando();
+}
 
             final recentBookings = bookingProvider.bookings.take(3).toList();
 

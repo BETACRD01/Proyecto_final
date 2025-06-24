@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../nucleo/constantes/colores_app.dart';
 import '../../nucleo/widgets/boton_personalizado.dart';
-import '../../nucleo/widgets/widget_cargando.dart';
+import '../cliente/client/home/widget_cargando.dart';
 import '../../nucleo/widgets/widget_error.dart';
 import '../../nucleo/utilidades/ayudantes.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
@@ -50,8 +50,8 @@ class _ProviderServicesState extends State<ProviderServices> {
       body: Consumer<ServiceProvider>(
         builder: (context, serviceProvider, child) {
           if (serviceProvider.isLoading) {
-            return const LoadingWidget(message: 'Cargando servicios...');
-          }
+ return const WidgetCargando(mensaje: 'Cargando servicios...');
+}
 
           if (serviceProvider.errorMessage != null) {
             return CustomErrorWidget(
