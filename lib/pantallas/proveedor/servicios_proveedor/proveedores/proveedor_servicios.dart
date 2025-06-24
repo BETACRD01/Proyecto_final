@@ -5,26 +5,56 @@ import '../modelos/modelo_servicio.dart';
 
 class ProveedorServicio extends ChangeNotifier {
   List<ModeloServicio> _servicios = [];
+  List<ModeloServicio> _serviciosFiltrados = [];
   bool _estaCargando = false;
   String? _mensajeError;
+  String _consultaBusqueda = '';
 
   // Getters
-  List<ModeloServicio> get servicios => List.unmodifiable(_servicios);
+  List<ModeloServicio> get servicios => _consultaBusqueda.isEmpty 
+      ? List.unmodifiable(_servicios) 
+      : List.unmodifiable(_serviciosFiltrados);
   bool get estaCargando => _estaCargando;
   String? get mensajeError => _mensajeError;
+  String get consultaBusqueda => _consultaBusqueda;
   
   List<ModeloServicio> get serviciosActivos => 
-      _servicios.where((servicio) => servicio.estaActivo).toList();
+      servicios.where((servicio) => servicio.estaActivo).toList();
   
   List<ModeloServicio> get serviciosInactivos => 
-      _servicios.where((servicio) => !servicio.estaActivo).toList();
+      servicios.where((servicio) => !servicio.estaActivo).toList();
 
-  int get totalServicios => _servicios.length;
+  int get totalServicios => servicios.length;
   int get totalServiciosActivos => serviciosActivos.length;
   double get calificacionPromedio {
-    if (_servicios.isEmpty) return 0.0;
-    double suma = _servicios.fold(0.0, (sum, servicio) => sum + servicio.calificacion);
-    return suma / _servicios.length;
+    if (servicios.isEmpty) return 0.0;
+    double suma = servicios.fold(0.0, (sum, servicio) => sum + servicio.calificacion);
+    return suma / servicios.length;
+  }
+
+  // Método agregado para compatibilidad con pantalla_inicio.dart
+  Future<void> loadServices() async {
+    await cargarServiciosDelProveedor('usuario_ejemplo');
+  }
+
+  // Método agregado para búsqueda
+  void setSearchQuery(String query) {
+    _consultaBusqueda = query.trim();
+    
+    if (_consultaBusqueda.isEmpty) {
+      _serviciosFiltrados.clear();
+    } else {
+      _serviciosFiltrados = buscarPorNombre(_consultaBusqueda);
+    }
+    
+    notifyListeners();
+  }
+
+  // Limpiar búsqueda
+  void limpiarBusqueda() {
+    _consultaBusqueda = '';
+    _serviciosFiltrados.clear();
+    notifyListeners();
   }
 
   // Métodos para gestionar el estado de carga
@@ -86,6 +116,12 @@ class ProveedorServicio extends ChangeNotifier {
       );
 
       _servicios.add(nuevoServicio);
+      
+      // Actualizar filtrados si hay búsqueda activa
+      if (_consultaBusqueda.isNotEmpty) {
+        setSearchQuery(_consultaBusqueda);
+      }
+      
       _establecerCargando(false);
       return true;
     } catch (e) {
@@ -118,6 +154,11 @@ class ProveedorServicio extends ChangeNotifier {
         fechaActualizacion: DateTime.now(),
       );
 
+      // Actualizar filtrados si hay búsqueda activa
+      if (_consultaBusqueda.isNotEmpty) {
+        setSearchQuery(_consultaBusqueda);
+      }
+
       _establecerCargando(false);
       return true;
     } catch (e) {
@@ -142,6 +183,12 @@ class ProveedorServicio extends ChangeNotifier {
       }
 
       _servicios.removeAt(indice);
+      
+      // Actualizar filtrados si hay búsqueda activa
+      if (_consultaBusqueda.isNotEmpty) {
+        setSearchQuery(_consultaBusqueda);
+      }
+      
       _establecerCargando(false);
       return true;
     } catch (e) {
@@ -187,9 +234,16 @@ class ProveedorServicio extends ChangeNotifier {
   // Limpiar todos los servicios
   void limpiarServicios() {
     _servicios.clear();
+    _serviciosFiltrados.clear();
+    _consultaBusqueda = '';
     _mensajeError = null;
     notifyListeners();
   }
+
+// Agregar este método a tu clase ProveedorServicio:
+Future<void> loadServicesByProvider(String userId) async {
+  await cargarServiciosDelProveedor(userId);
+}
 
   // Datos de ejemplo - remover en producción
   List<ModeloServicio> _obtenerServiciosEjemplo(String proveedorId) {

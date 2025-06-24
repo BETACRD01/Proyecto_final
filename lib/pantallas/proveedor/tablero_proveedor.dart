@@ -32,7 +32,7 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
     if (user != null) {
       Provider.of<BookingProvider>(context, listen: false)
           .loadUserBookings(user.id, isProvider: true);
-      Provider.of<ServiceProvider>(context, listen: false)
+      Provider.of<ProveedorServicio>(context, listen: false)
           .loadServicesByProvider(user.id);
     }
   }
@@ -140,9 +140,9 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
   }
 
   Widget _buildQuickStats() {
-    return Consumer2<BookingProvider, ServiceProvider>(
+    return Consumer2<BookingProvider, ProveedorServicio>(
       builder: (context, bookingProvider, serviceProvider, child) {
-        if (bookingProvider.isLoading || serviceProvider.isLoading) {
+        if (bookingProvider.isLoading || serviceProvider.estaCargando) {
  return const WidgetCargando();
 }
 
@@ -150,7 +150,7 @@ class _ProviderDashboardState extends State<ProviderDashboard> {
         final pendingBookings =
             bookingProvider.getBookingsByStatus(BookingStatus.pending).length;
         final completedBookings = bookingProvider.getCompletedBookings().length;
-        final totalServices = serviceProvider.services.length;
+        final totalServices = serviceProvider.servicios.length;
 
         return Row(
           children: [

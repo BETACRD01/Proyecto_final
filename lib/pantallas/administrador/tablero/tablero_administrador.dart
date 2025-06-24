@@ -22,7 +22,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _loadDashboardData() {
     // Cargar datos para el dashboard
-    Provider.of<ServiceProvider>(context, listen: false).loadServices();
+    Provider.of<ProveedorServicio>(context, listen: false).loadServices();
     // Comentado hasta que exista el método correcto
     // Provider.of<BookingProvider>(context, listen: false).loadAllBookings();
   }

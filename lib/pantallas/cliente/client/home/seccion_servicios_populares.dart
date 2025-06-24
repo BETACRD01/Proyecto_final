@@ -1,10 +1,9 @@
-// nucleo/widgets/client/seccion_servicios_populares.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart'; // Tu ServiceProvider
+import '../../../proveedor/servicios_proveedor/proveedores/proveedor_servicios.dart';
+import '../../../proveedor/servicios_proveedor/widgets/tarjeta_servicio.dart';
 import '../../../../nucleo/constantes/colores_app.dart';
 import 'widget_cargando.dart';
-import 'tarjeta_servicio.dart';
 import 'tarjeta_vacia.dart';
 
 class SeccionServiciosPopulares extends StatelessWidget {
@@ -41,17 +40,17 @@ class SeccionServiciosPopulares extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 15),
-          Consumer<ServiceProvider>(
-            builder: (context, serviceProvider, child) {
-              if (serviceProvider.isLoading) {
+          Consumer<ProveedorServicio>(
+            builder: (context, proveedorServicio, child) {
+              if (proveedorServicio.estaCargando) {
                 return const WidgetCargando(esGrilla: true);
               }
 
-              if (serviceProvider.services.isEmpty) {
+              if (proveedorServicio.servicios.isEmpty) {
                 return const TarjetaVacia(mensaje: 'No hay servicios disponibles');
               }
 
-              final serviciosMostrar = serviceProvider.services.take(4).toList();
+              final serviciosMostrar = proveedorServicio.servicios.take(4).toList();
 
               return GridView.builder(
                 shrinkWrap: true,
@@ -66,7 +65,10 @@ class SeccionServiciosPopulares extends StatelessWidget {
                 itemBuilder: (context, indice) {
                   return TarjetaServicio(
                     servicio: serviciosMostrar[indice],
-                    indice: indice,
+                    onEditar: (servicioId) => _editarServicio(context, servicioId),
+                    onCambiarEstado: (servicioId, nuevoEstado) => 
+                        _cambiarEstadoServicio(context, servicioId, nuevoEstado),
+                    onEliminar: (servicioId) => _eliminarServicio(context, servicioId),
                   );
                 },
               );
@@ -83,6 +85,69 @@ class SeccionServiciosPopulares extends StatelessWidget {
         content: Text('📋 Navegando a todos los servicios...'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _editarServicio(BuildContext context, String servicioId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✏️ Editando servicio: $servicioId'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _cambiarEstadoServicio(BuildContext context, String servicioId, bool nuevoEstado) {
+    final proveedorServicio = context.read<ProveedorServicio>();
+    proveedorServicio.cambiarEstadoServicio(servicioId, nuevoEstado);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          nuevoEstado 
+            ? '✅ Servicio activado' 
+            : '❌ Servicio desactivado'
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: nuevoEstado ? AppColors.success : AppColors.warning,
+      ),
+    );
+  }
+
+  void _eliminarServicio(BuildContext context, String servicioId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Eliminar servicio?'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              final proveedorServicio = context.read<ProveedorServicio>();
+              proveedorServicio.eliminarServicio(servicioId);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🗑️ Servicio eliminado'),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
       ),
     );
   }

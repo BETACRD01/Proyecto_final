@@ -1,16 +1,10 @@
-// lib/caracteristicas/servicios_proveedor/pantallas/pantalla_servicios_proveedor.dart
-
+// lib/pantallas/proveedor/servicios_proveedor/pantalla_servicios_proveedor.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../nucleo/constantes/colores_app.dart';
-import '../../cliente/client/home/widget_cargando.dart';
-import '../../../nucleo/widgets/widget_error.dart';
 import '../../../proveedores/proveedor_autenticacion.dart';
-import '../proveedores/proveedor_servicio.dart';
-import '../modelos/modelo_servicio.dart';
-import '../widgets/vista_servicios_vacios.dart';
-import '../widgets/tarjeta_servicio.dart';
-import '../widgets/dialogo_formulario_servicio.dart';
+import 'servicios_proveedor/proveedores/proveedor_servicios.dart';
+import 'servicios_proveedor/modelos/modelo_servicio.dart';
 
 class PantallaServiciosProveedor extends StatefulWidget {
   const PantallaServiciosProveedor({Key? key}) : super(key: key);
@@ -23,267 +17,182 @@ class _PantallaServiciosProveedorState extends State<PantallaServiciosProveedor>
   @override
   void initState() {
     super.initState();
+    // Cargar servicios cuando se inicializa la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarServicios();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+      if (user != null) {
+        Provider.of<ProveedorServicio>(context, listen: false)
+            .loadServicesByProvider(user.id);
+      }
     });
-  }
-
-  void _cargarServicios() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final usuario = authProvider.currentUser;
-
-    if (usuario != null) {
-      Provider.of<ProveedorServicio>(context, listen: false)
-          .cargarServiciosDelProveedor(usuario.id);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
-      body: _buildCuerpo(),
-      floatingActionButton: _buildBotonFlotante(),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'Mis Servicios',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
+      appBar: AppBar(
+        title: const Text('Mis Servicios'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      actions: [
-        Consumer<ProveedorServicio>(
-          builder: (context, proveedorServicio, child) {
-            if (proveedorServicio.servicios.isNotEmpty) {
-              return PopupMenuButton<String>(
-                onSelected: _manejarAccionAppBar,
-                icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'estadisticas',
-                    child: Row(
-                      children: [
-                        Icon(Icons.analytics, size: 16),
-                        SizedBox(width: 8),
-                        Text('Estadísticas'),
-                      ],
-                    ),
+      body: Consumer<ProveedorServicio>(
+        builder: (context, proveedorServicio, child) {
+          if (proveedorServicio.estaCargando) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary),
+                  SizedBox(height: 16),
+                  Text('Cargando servicios...'),
+                ],
+              ),
+            );
+          }
+
+          if (proveedorServicio.mensajeError != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${proveedorServicio.mensajeError}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
                   ),
-                  const PopupMenuItem(
-                    value: 'refrescar',
-                    child: Row(
-                      children: [
-                        Icon(Icons.refresh, size: 16),
-                        SizedBox(width: 8),
-                        Text('Refrescar'),
-                      ],
-                    ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final user = authProvider.currentUser;
+                      if (user != null) {
+                        proveedorServicio.loadServicesByProvider(user.id);
+                      }
+                    },
+                    child: const Text('Reintentar'),
                   ),
                 ],
+              ),
+            );
+          }
+
+          if (proveedorServicio.servicios.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.home_repair_service_outlined, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No tienes servicios registrados',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Agrega tu primer servicio para comenzar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: proveedorServicio.servicios.length,
+            itemBuilder: (context, index) {
+              final servicio = proveedorServicio.servicios[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    child: Icon(
+                      _getServiceIcon(servicio.categoria),
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  title: Text(
+                    servicio.nombre,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(servicio.descripcion),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          Text(' ${servicio.calificacion}'),
+                          const SizedBox(width: 16),
+                          Icon(
+                            servicio.estaActivo ? Icons.check_circle : Icons.pause_circle,
+                            size: 16,
+                            color: servicio.estaActivo ? Colors.green : Colors.orange,
+                          ),
+                          Text(servicio.estaActivo ? ' Activo' : ' Pausado'),
+                        ],
+                      ),
+                    ],
+                  ),
+                  trailing: Text(
+                    '\$${servicio.precioPorHora.toStringAsFixed(0)}/h',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  onTap: () {
+                    // Navegar a detalles del servicio
+                    _showServiceDetails(servicio);
+                  },
+                ),
               );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.add, color: AppColors.primary),
-          onPressed: _mostrarDialogoAgregarServicio,
-          tooltip: 'Agregar servicio',
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
-  Widget _buildCuerpo() {
-    return Consumer<ProveedorServicio>(
-      builder: (context, proveedorServicio, child) {
-        if (proveedorServicio.estaCargando) {
-          return const WidgetCargando(mensaje: 'Cargando servicios...');
-        }
-
-        if (proveedorServicio.mensajeError != null) {
-          return CustomErrorWidget(
-            message: proveedorServicio.mensajeError!,
-            onRetry: _cargarServicios,
+            },
           );
-        }
-
-        final servicios = proveedorServicio.servicios;
-
-        if (servicios.isEmpty) {
-          return VistaServiciosVacios(
-            onAgregarServicio: _mostrarDialogoAgregarServicio,
-          );
-        }
-
-        return Column(
-          children: [
-            _buildResumenEstadisticas(proveedorServicio),
-            Expanded(
-              child: _buildListaServicios(servicios),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildResumenEstadisticas(ProveedorServicio proveedorServicio) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.1),
-            AppColors.primary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildEstadistica(
-              'Total',
-              proveedorServicio.totalServicios.toString(),
-              Icons.home_repair_service,
-              AppColors.primary,
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.border,
-          ),
-          Expanded(
-            child: _buildEstadistica(
-              'Activos',
-              proveedorServicio.totalServiciosActivos.toString(),
-              Icons.visibility,
-              AppColors.success,
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.border,
-          ),
-          Expanded(
-            child: _buildEstadistica(
-              'Calificación',
-              proveedorServicio.calificacionPromedio.toStringAsFixed(1),
-              Icons.star,
-              AppColors.warning,
-            ),
-          ),
-        ],
+        },
       ),
     );
   }
 
-  Widget _buildEstadistica(String titulo, String valor, IconData icono, Color color) {
-    return Column(
-      children: [
-        Icon(icono, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          valor,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          titulo,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildListaServicios(List<ModeloServicio> servicios) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-      itemCount: servicios.length,
-      itemBuilder: (context, index) {
-        return TarjetaServicio(
-          servicio: servicios[index],
-          onEditar: _mostrarDialogoEditarServicio,
-          onCambiarEstado: _cambiarEstadoServicio,
-          onEliminar: _mostrarConfirmacionEliminar,
-        );
-      },
-    );
-  }
-
-  Widget? _buildBotonFlotante() {
-    return Consumer<ProveedorServicio>(
-      builder: (context, proveedorServicio, child) {
-        if (proveedorServicio.servicios.isNotEmpty) {
-          return FloatingActionButton(
-            onPressed: _mostrarDialogoAgregarServicio,
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.add, color: Colors.white),
-          );
-        }
-        return null;
-      },
-    );
-  }
-
-  void _manejarAccionAppBar(String accion) {
-    switch (accion) {
-      case 'estadisticas':
-        _mostrarEstadisticas();
-        break;
-      case 'refrescar':
-        _cargarServicios();
-        break;
+  IconData _getServiceIcon(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'plomeria':
+        return Icons.plumbing;
+      case 'electricidad':
+        return Icons.electrical_services;
+      case 'jardineria':
+        return Icons.grass;
+      case 'limpieza':
+        return Icons.cleaning_services;
+      default:
+        return Icons.home_repair_service;
     }
   }
 
-  void _mostrarEstadisticas() {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    
+  void _showServiceDetails(ModeloServicio servicio) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.analytics, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Estadísticas'),
-          ],
-        ),
+        title: Text(servicio.nombre),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildFilaEstadistica('Servicios totales:', proveedorServicio.totalServicios.toString()),
-            _buildFilaEstadistica('Servicios activos:', proveedorServicio.totalServiciosActivos.toString()),
-            _buildFilaEstadistica('Servicios inactivos:', 
-                (proveedorServicio.totalServicios - proveedorServicio.totalServiciosActivos).toString()),
-            _buildFilaEstadistica('Calificación promedio:', 
-                proveedorServicio.calificacionPromedio.toStringAsFixed(1)),
+            Text('Descripción: ${servicio.descripcion}'),
+            const SizedBox(height: 8),
+            Text('Categoría: ${servicio.categoria}'),
+            const SizedBox(height: 8),
+            Text('Precio: \$${servicio.precioPorHora}/hora'),
+            const SizedBox(height: 8),
+            Text('Calificación: ${servicio.calificacion}/5.0'),
+            const SizedBox(height: 8),
+            Text('Estado: ${servicio.estaActivo ? "Activo" : "Pausado"}'),
           ],
         ),
         actions: [
@@ -291,171 +200,15 @@ class _PantallaServiciosProveedorState extends State<PantallaServiciosProveedor>
             onPressed: () => Navigator.pop(context),
             child: const Text('Cerrar'),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilaEstadistica(String etiqueta, String valor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(etiqueta),
-          Text(
-            valor,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarDialogoAgregarServicio() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final usuario = authProvider.currentUser;
-
-    if (usuario == null) return;
-
-    final resultado = await showDialog<ModeloServicio>(
-      context: context,
-      builder: (context) => DialogoFormularioServicio(
-        proveedorId: usuario.id,
-      ),
-    );
-
-    if (resultado != null && mounted) {
-      _procesarResultadoServicio(resultado, esNuevo: true);
-    }
-  }
-
-  void _mostrarDialogoEditarServicio(String servicioId) async {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    final servicio = proveedorServicio.obtenerServicioPorId(servicioId);
-
-    if (servicio == null) return;
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final usuario = authProvider.currentUser;
-
-    if (usuario == null) return;
-
-    final resultado = await showDialog<ModeloServicio>(
-      context: context,
-      builder: (context) => DialogoFormularioServicio(
-        servicio: servicio,
-        proveedorId: usuario.id,
-      ),
-    );
-
-    if (resultado != null && mounted) {
-      _procesarResultadoServicio(resultado, esNuevo: false);
-    }
-  }
-
-  void _procesarResultadoServicio(ModeloServicio servicio, {required bool esNuevo}) async {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    
-    bool exito;
-    if (esNuevo) {
-      exito = await proveedorServicio.agregarServicio(servicio);
-    } else {
-      exito = await proveedorServicio.actualizarServicio(servicio);
-    }
-
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            esNuevo ? 'Servicio agregado exitosamente' : 'Servicio actualizado exitosamente',
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
-  }
-
-  void _cambiarEstadoServicio(String servicioId, bool nuevoEstado) async {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    
-    final exito = await proveedorServicio.cambiarEstadoServicio(servicioId, nuevoEstado);
-
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            nuevoEstado ? 'Servicio activado' : 'Servicio desactivado',
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
-  }
-
-  void _mostrarConfirmacionEliminar(String servicioId) {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    final servicio = proveedorServicio.obtenerServicioPorId(servicioId);
-
-    if (servicio == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning, color: AppColors.error),
-            SizedBox(width: 8),
-            Text('Eliminar Servicio'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('¿Estás seguro de que quieres eliminar "${servicio.nombre}"?'),
-            const SizedBox(height: 8),
-            const Text(
-              'Esta acción no se puede deshacer.',
-              style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
+          ElevatedButton(
+            onPressed: () {
               Navigator.pop(context);
-              await _eliminarServicio(servicioId);
+              // Aquí podrías navegar a editar servicio
             },
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: AppColors.error),
-            ),
+            child: const Text('Editar'),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _eliminarServicio(String servicioId) async {
-    final proveedorServicio = Provider.of<ProveedorServicio>(context, listen: false);
-    
-    final exito = await proveedorServicio.eliminarServicio(servicioId);
-
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Servicio eliminado exitosamente'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
   }
 }

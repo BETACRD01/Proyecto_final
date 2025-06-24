@@ -14,7 +14,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider()),
-          ChangeNotifierProvider(create: (_) => ServiceProvider()),
+          ChangeNotifierProvider(create: (_) => ProveedorServicio()),
           ChangeNotifierProvider(create: (_) => BookingProvider()),
           ChangeNotifierProvider(create: (_) => UserProvider()),
         ],
@@ -33,7 +33,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider()),
-          ChangeNotifierProvider(create: (_) => ServiceProvider()),
+          ChangeNotifierProvider(create: (_) => ProveedorServicio()),
           ChangeNotifierProvider(create: (_) => BookingProvider()),
           ChangeNotifierProvider(create: (_) => UserProvider()),
         ],

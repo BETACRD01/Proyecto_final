@@ -4,10 +4,12 @@ import '../../nucleo/constantes/colores_app.dart';
 import '../../proveedores/proveedor_autenticacion.dart';
 import '../../modelos/modelo_usuario.dart';
 import 'tablero_proveedor.dart';
-import '../proveedor/servicios_proveedor.dart';
 import 'reservas_proveedor.dart';
 import '../cliente/pantalla_chat.dart';
 import '../cliente/pantalla_perfil.dart';
+import 'servicios_proveedor.dart';  // ✅ Tu archivo real
+
+
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({Key? key}) : super(key: key);
@@ -157,13 +159,13 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                 _currentIndex = index;
               });
             },
-            children: const [
-              ProviderDashboard(),
-              ProviderServices(),
-              ProviderBookings(),
-              ChatScreen(),
-              ProfileScreen(),
-            ],
+           children: [  // Quitar const
+           const ProviderDashboard(),
+          const PantallaServiciosProveedor(),  // ✅ Agregar esta línea
+          const ProviderBookings(),
+          const ChatScreen(),
+          const ProfileScreen(),
+          ],
           ),
           bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,

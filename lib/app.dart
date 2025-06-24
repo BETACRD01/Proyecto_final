@@ -14,7 +14,6 @@ import 'pantallas/comunes/pantalla_mapa.dart';
 import 'pantallas/cliente/pantalla_chat.dart';
 import 'pantallas/proveedor/pantalla_inicio_proveedor.dart';
 import 'pantallas/administrador/pantalla_inicio_administrador.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'pantallas/cliente/reservas_cliente.dart';
 
 class ManachiyKanKusataApp extends StatelessWidget {
@@ -26,16 +25,9 @@ class ManachiyKanKusataApp extends StatelessWidget {
       title: 'Mañachiy kan Kusata',
       debugShowCheckedModeBanner: false,
 
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('es', 'ES'),
-        Locale('en', 'US'),
-      ],
-      locale: const Locale('es', 'ES'),
+     //configuracion de geolocalizacion
+     //https://pub.dev/packages/geolocator
+    
       
       initialRoute: AppRoutes.splash,
       
@@ -57,7 +49,7 @@ class ManachiyKanKusataApp extends StatelessWidget {
         // 🔹 PROVEEDOR
         AppRoutes.providerHome: (context) => const ProviderHomeScreen(),
         AppRoutes.providerDashboard: (context) => const ProviderDashboard(),
-        AppRoutes.providerServices: (context) => const ProviderServices(),
+        AppRoutes.providerServices: (context) => const PantallaServiciosProveedor(), // ✅ Corregido
         AppRoutes.providerBookings: (context) => const PantallaListaReservas(),
         AppRoutes.providerRegistrationForm: (context) => const ProviderRegistrationForm(),
         
